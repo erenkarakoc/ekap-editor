@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xxd:*)",
+      "WebSearch",
+      "Bash(wc:*)",
+      "Bash(dir:*)",
+      "Bash(file:*)",
+      "Bash(du:*)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add sidebar button card table input dialog sheet dropdown-menu avatar badge separator scroll-area tooltip tabs form label alert sonner -y)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(copy \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\ekap-editor\\\\test.ekap\" \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\ekap-editor-next\\\\public\\\\test.ekap\")",
+      "Bash(npm run dev)",
+      "Bash(python3:*)",
+      "Bash(tree:*)"
+    ]
+  }
+}
