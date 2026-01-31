@@ -212,10 +212,12 @@ function parseItems(doc: Document): EkapItem[] {
     const adet = getAttr('Adet') || '0';
 
     // Fiyat: from Teklif > Fiyat element text content
-    const fiyat = getChildText('Teklif > Fiyat') || '0';
+    const fiyatRaw = getChildText('Teklif > Fiyat') || '0';
+    const fiyatDecimal = parseTurkishNumber(fiyatRaw);
 
     // Toplam: from Teklif > KalemTeklifToplam element text content
-    const toplam = getChildText('Teklif > KalemTeklifToplam') || '0';
+    const toplamRaw = getChildText('Teklif > KalemTeklifToplam') || '0';
+    const toplamDecimal = parseTurkishNumber(toplamRaw);
 
     items.push({
       index: index + 1,
@@ -231,10 +233,10 @@ function parseItems(doc: Document): EkapItem[] {
       birim: getAttr('TicariSunumSekli') || '',
       urunKodu: getChildText('Teklif > UrunKodu') || '',
       urunAd: getChildText('Teklif > UrunAd') || '',
-      fiyat,
-      fiyatDecimal: parseTurkishNumber(fiyat),
-      toplam,
-      toplamDecimal: parseTurkishNumber(toplam),
+      fiyat: formatTurkishNumber(fiyatDecimal),
+      fiyatDecimal,
+      toplam: formatTurkishNumber(toplamDecimal),
+      toplamDecimal,
     });
   });
 

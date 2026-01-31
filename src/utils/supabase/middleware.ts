@@ -1,6 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+const protectedRoutes = ['/editor', '/user'];
+const authRoutes = ['/login', '/register'];
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -27,23 +30,23 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
-  // creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { pathname } = request.nextUrl;
 
-  try {
-    await supabase.auth.getUser();
-  } catch (error) {
-    console.error('Auth error:', error);
+  // Check if the route is protected and user is not authenticated
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+  if (isProtectedRoute && !user) {
+    const redirectUrl = new URL('/login', request.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Check if user is authenticated and trying to access auth routes
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+  if (isAuthRoute && user) {
+    const redirectUrl = new URL('/editor', request.url);
+    return NextResponse.redirect(redirectUrl);
   }
 
   return supabaseResponse;

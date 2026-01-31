@@ -141,6 +141,93 @@ export function EditorView({
   const hasFittedRef = useRef(false);
   const prevLayoutKeyRef = useRef<string>('');
 
+  // Helper function to get column style for text measurement
+  const getColumnStyle = useCallback(
+    (
+      columnKey: string,
+    ): { font: string; padding: number; getValue: (item: EkapItem) => string } => {
+      switch (columnKey) {
+        // Code columns with <code> tag: font-mono text-[10px] + badge padding
+        case 'kalemId':
+        case 'isKalemiNo':
+        case 'urunKodu':
+          return {
+            font: '10px monospace',
+            padding: 32, // cell py-1 + code px-1 + badge bg padding
+            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
+          };
+
+        // Number columns with font-mono text-sm (14px)
+        case 'adetDecimal':
+        case 'toplamDecimal':
+          return {
+            font: '14px monospace',
+            padding: 24, // cell padding
+            getValue: (item) => formatTurkishNumber(item[columnKey]),
+          };
+
+        // Price input column: font-mono text-sm + input padding
+        case 'fiyatDecimal':
+          return {
+            font: '14px monospace',
+            padding: 40, // cell p-1 (8px) + input px-3 (24px) + extra buffer
+            getValue: (item) => formatTurkishNumber(item.fiyatDecimal),
+          };
+
+        // Small text columns: text-xs (12px)
+        case 'siraNo':
+        case 'birim':
+        case 'paraBirimi':
+          return {
+            font: '12px system-ui',
+            padding: 16,
+            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
+          };
+
+        // Description column: text-sm (14px)
+        case 'aciklama':
+          return {
+            font: '14px system-ui',
+            padding: 16,
+            getValue: (item) => item.aciklama,
+          };
+
+        // Default text columns
+        default:
+          return {
+            font: '14px system-ui',
+            padding: 16,
+            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
+          };
+      }
+    },
+    [],
+  );
+
+  // Helper function to calculate optimal width for a single column based on content
+  const calculateOptimalColumnWidth = useCallback(
+    (key: string): number => {
+      let maxContentWidth = 40; // minimum
+
+      // Include header width
+      const label = COLUMN_LABELS[key] || '';
+      const headerWidth = measureTextWidth(label.toUpperCase(), 'bold 12px system-ui') + 40;
+      maxContentWidth = Math.max(maxContentWidth, headerWidth);
+
+      const style = getColumnStyle(key);
+
+      // Check all items for largest content
+      for (const item of document.items) {
+        const val = style.getValue(item);
+        const width = measureTextWidth(val, style.font) + style.padding;
+        if (width > maxContentWidth) maxContentWidth = width;
+      }
+
+      return maxContentWidth;
+    },
+    [document.items, getColumnStyle],
+  );
+
   // Helper function to adjust column widths based on container width
   const adjustColumnWidths = useCallback(
     (newContainerWidth: number) => {
@@ -151,6 +238,31 @@ export function EditorView({
       if (prevLayoutKeyRef.current === layoutKey) return;
       prevLayoutKeyRef.current = layoutKey;
 
+      // FIRST LOAD: Auto-fit all columns, aciklama fills remaining
+      if (!hasFittedRef.current) {
+        const buffer = 2;
+        const targetWidth = newContainerWidth - buffer;
+        const newWidths: Record<string, number> = {};
+        let totalOtherWidth = 0;
+
+        for (const key of visibleKeys) {
+          if (key === 'aciklama') continue;
+          const optimalWidth = calculateOptimalColumnWidth(key);
+          newWidths[key] = optimalWidth;
+          totalOtherWidth += optimalWidth;
+        }
+
+        // Açıklama fills remaining space (min 100px)
+        if (visibleKeys.includes('aciklama')) {
+          newWidths.aciklama = Math.max(100, targetWidth - totalOtherWidth);
+        }
+
+        setColumnWidths((prev) => ({ ...prev, ...newWidths }));
+        hasFittedRef.current = true;
+        return;
+      }
+
+      // SUBSEQUENT RESIZES: Keep existing proportional logic
       setColumnWidths((prev) => {
         const currentTotal = visibleKeys.reduce((sum, key) => sum + (prev[key] || 0), 0);
         const buffer = 2;
@@ -195,10 +307,8 @@ export function EditorView({
 
         return prev;
       });
-
-      hasFittedRef.current = true;
     },
-    [isActive, visibleColumns],
+    [isActive, visibleColumns, calculateOptimalColumnWidth],
   );
 
   // Watch for container resize and adjust columns
@@ -322,85 +432,12 @@ export function EditorView({
     const currentContainerWidth = tableContainerRef.current?.clientWidth || 0;
     if (currentContainerWidth <= 0) return;
 
-    // Scan ALL rows to find the row with largest content width
-    let maxContentWidth = 40; // minimum
-
-    // Include header width (bold 12px uppercase with sort icon)
-    const label = COLUMN_LABELS[key] || '';
-    const headerWidth = measureTextWidth(label.toUpperCase(), 'bold 12px system-ui') + 40; // padding + sort icon + resize handle
-    maxContentWidth = Math.max(maxContentWidth, headerWidth);
-
-    // Get font and padding based on column type - matching actual cell rendering
-    const getColumnStyle = (
-      columnKey: string,
-    ): { font: string; padding: number; getValue: (item: EkapItem) => string } => {
-      switch (columnKey) {
-        // Code columns with <code> tag: font-mono text-[10px] + badge padding
-        case 'kalemId':
-        case 'isKalemiNo':
-        case 'urunKodu':
-          return {
-            font: '10px monospace',
-            padding: 32, // cell py-1 + code px-1 + badge bg padding
-            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
-          };
-
-        // Number columns with font-mono text-sm (14px)
-        case 'adetDecimal':
-        case 'toplamDecimal':
-          return {
-            font: '14px monospace',
-            padding: 24, // cell padding
-            getValue: (item) => formatTurkishNumber(item[columnKey]),
-          };
-
-        // Price input column: font-mono text-sm + input padding
-        case 'fiyatDecimal':
-          return {
-            font: '14px monospace',
-            padding: 40, // cell p-1 (8px) + input px-3 (24px) + extra buffer
-            getValue: (item) => formatTurkishNumber(item.fiyatDecimal),
-          };
-
-        // Small text columns: text-xs (12px)
-        case 'siraNo':
-        case 'birim':
-        case 'paraBirimi':
-          return {
-            font: '12px system-ui',
-            padding: 16,
-            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
-          };
-
-        // Description column: text-sm (14px)
-        case 'aciklama':
-          return {
-            font: '14px system-ui',
-            padding: 16,
-            getValue: (item) => item.aciklama,
-          };
-
-        // Default text columns
-        default:
-          return {
-            font: '14px system-ui',
-            padding: 16,
-            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
-          };
-      }
-    };
-
-    const style = getColumnStyle(key);
-
-    // Check all items to find the one with the largest content
-    for (const item of document.items) {
-      const val = style.getValue(item);
-      const width = measureTextWidth(val, style.font) + style.padding;
-      if (width > maxContentWidth) maxContentWidth = width;
-    }
+    // Use shared helper for base optimal width calculation
+    let maxContentWidth = calculateOptimalColumnWidth(key);
 
     // For input columns, also check actual DOM input values (in case user typed but hasn't committed)
     if (key === 'fiyatDecimal' && tableContainerRef.current) {
+      const style = getColumnStyle(key);
       const inputs = tableContainerRef.current.querySelectorAll('input');
       inputs.forEach((input) => {
         const inputValue = input.value;
@@ -551,12 +588,17 @@ export function EditorView({
     <div className={`flex h-full flex-col ${!isActive ? 'hidden' : ''}`}>
       {/* Toolbar / Search */}
       <div className="items-between bg-muted/20 flex flex-col justify-between space-y-2 border-b px-4 py-2 md:flex-row md:items-center md:space-y-0">
-        <div className="flex items-center gap-2">
-          <div className="relative w-full flex-1 md:max-w-md">
+        <div className="flex items-center gap-4">
+          <h1 className="text-foreground text-md">
+            {document.tenderInfo.iknYil}/{document.tenderInfo.iknSayi}
+          </h1>
+          <Separator orientation="vertical" className="h-6" />
+          <div className="relative w-full flex-1 md:max-w-lg">
             <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
+              id="table-search"
               ref={searchInputRef}
-              placeholder={`Ara (${COLUMN_LABELS.siraNo}, ${COLUMN_LABELS.isKalemiNo}, ${COLUMN_LABELS.aciklama})`}
+              placeholder="Ara"
               className="bg-background h-9 pl-9 focus-visible:ring-1"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -567,6 +609,21 @@ export function EditorView({
               </kbd>
             </div>
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="text-muted-foreground text-sm tabular-nums">
+                <span className="text-foreground ml-1 font-medium">{zeroPriceCount}</span>
+                <span className="mx-1">/</span>
+                {document.items.length}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Birim fiyatı girilmemiş {zeroPriceCount} adet poz bulunuyor.</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 md:justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 gap-2">
@@ -582,36 +639,13 @@ export function EditorView({
                   key={key}
                   checked={visibleColumns.includes(key)}
                   onCheckedChange={() => toggleColumn(key)}
+                  onSelect={(e) => e.preventDefault()}
                 >
                   {label}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 md:justify-center">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="text-muted-foreground text-sm tabular-nums">
-                <span className="text-foreground ml-1 font-medium">{zeroPriceCount}</span>
-                <span className="mx-1">/</span>
-                {document.items.length} poz
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Birim fiyatı girilmemiş {zeroPriceCount} adet poz bulunuyor.</p>
-            </TooltipContent>
-          </Tooltip>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowInfo(true)}
-            className="h-9 gap-2"
-          >
-            <Info className="size-4" />
-            <span className="hidden sm:inline">İhale Bilgileri</span>
-          </Button>
         </div>
       </div>
 
@@ -811,7 +845,7 @@ export function EditorView({
               )}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="[&_tr:last-child_td]:border-b-0">
             {filteredItems.map((item, i) => (
               <TableRow key={item.kalemId || i} className="hover:bg-muted/30 odd:bg-muted/5 group">
                 {visibleColumns.includes('siraNo') && (
@@ -881,11 +915,12 @@ export function EditorView({
                   </TableCell>
                 )}
                 {visibleColumns.includes('fiyatDecimal') && (
-                  <TableCell className="bg-accent border-border overflow-hidden border-r border-b p-1">
+                  <TableCell className="border-border overflow-hidden border-r border-b p-1">
                     <Input
                       key={`price-${item.index}-${item.fiyat}`}
-                      className="bg-input h-8 text-right font-mono text-sm"
+                      className="h-8 border text-right font-mono text-sm"
                       defaultValue={item.fiyat}
+                      onFocus={(e) => e.target.select()}
                       onBlur={(e) => handlePriceChange(item.index, e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -949,13 +984,12 @@ export function EditorView({
       </div>
 
       {/* Status Bar */}
-      <div className="bg-muted/40 flex shrink-0 flex-col items-start justify-between px-4 py-2 text-sm md:flex-row md:items-center">
+      <div className="bg-muted/40 flex shrink-0 flex-col items-start justify-between border-t px-4 py-2 text-sm md:flex-row md:items-center">
         <div className="text-muted-foreground flex w-full items-center justify-between gap-4 md:w-auto md:justify-start">
-          <span>{document.items.length} toplam poz</span>
-          <Separator orientation="vertical" className="h-4" />
-          <span>
-            {document.tenderInfo.iknYil}/{document.tenderInfo.iknSayi}
-          </span>
+          <Button variant="outline" size="sm" onClick={() => setShowInfo(true)} className="gap-2">
+            <Info className="size-4" />
+            <span className="hidden sm:inline">İhale Bilgileri</span>
+          </Button>
         </div>
         <div className="flex w-full items-center justify-between gap-2 md:w-auto md:justify-end">
           <span className="text-muted-foreground">Genel Toplam:</span>
@@ -1026,7 +1060,6 @@ function SortableHead({
   onResize,
   onHide,
   onFit,
-  onShrink,
   className,
 }: SortableHeadProps) {
   const isSorted = activeConfig.key === sortKey;
@@ -1071,7 +1104,7 @@ function SortableHead({
             className="hover:bg-muted flex h-full w-full cursor-pointer items-center justify-between px-2 transition-colors"
             onClick={() => onSort(sortKey)}
           >
-            <span className="truncate text-xs tracking-wider uppercase">{label}</span>
+            <span className="truncate text-xs">{label}</span>
             <div className="flex items-center">
               {direction === 'asc' ? (
                 <ArrowUp className="text-primary size-3.5" />
@@ -1086,7 +1119,7 @@ function SortableHead({
         <ContextMenuContent className="w-56">
           <ContextMenuItem onClick={() => onHide?.(sortKey)} className="cursor-pointer gap-2">
             <EyeOff className="size-4" />
-            <span>Kolonu Gizle</span>
+            <span>Gizle</span>
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={() => onFit?.(sortKey)} className="cursor-pointer gap-2">

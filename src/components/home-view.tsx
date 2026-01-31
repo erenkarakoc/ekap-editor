@@ -4,10 +4,8 @@ import React, { useMemo } from 'react';
 import { FileText, Plus, Clock, Search, Monitor, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// import { ScrollArea } from "@/components/ui/scroll-area";
-// Note: ScrollArea not in the list, so I will fall back to standard div if import fails,
-// but actually I'll just use standard div to be safe.
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 export interface RecentFile {
   id: string; // path or unique identifier
@@ -110,9 +108,9 @@ export function HomeView({
               <div className="mb-4 flex items-center gap-2">
                 <Monitor className="text-primary size-5" />
                 <h2 className="text-xl font-semibold">Açık Dosyalar</h2>
-                <span className="text-muted-foreground ml-2 text-sm">
-                  ({filteredActive.length})
-                </span>
+                <Badge className="text-muted-foreground font-mono text-[10px]" variant="secondary">
+                  {filteredActive.length}
+                </Badge>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -120,7 +118,7 @@ export function HomeView({
                   <div
                     key={session.id}
                     onClick={() => onOpenSession(session.id)}
-                    className="group bg-card hover:border-primary/50 relative flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all hover:shadow-md"
+                    className="group bg-card hover:bg-accent/30 relative flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all hover:shadow-md"
                   >
                     <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-md">
                       <FileText className="size-5" />
