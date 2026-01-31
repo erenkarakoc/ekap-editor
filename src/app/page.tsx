@@ -188,7 +188,7 @@ export default function Dashboard() {
     setSessions((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const handleCloseTab = (e: React.MouseEvent, id: string) => {
+  const handleCloseTab = (e: React.MouseEvent<HTMLElement>, id: string) => {
     e.stopPropagation();
     const session = sessions.find((s) => s.id === id);
     if (session?.isDirty) {
@@ -324,7 +324,7 @@ export default function Dashboard() {
                   onClick={() => setActiveTabId(session.id)}
                   onAuxClick={(e) => {
                     if (e.button === 1) {
-                      handleCloseTab(e as any, session.id);
+                      handleCloseTab(e, session.id);
                     }
                   }}
                   className={cn(

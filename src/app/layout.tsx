@@ -18,6 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'EKAP Editör',
   description: 'Elektronik Kamu Alımları Platformu Teklif Editörü',
+  icons: { icon: '/favicon.ico' },
 };
 
 export default function RootLayout({

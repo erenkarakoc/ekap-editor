@@ -14,7 +14,10 @@
       "Bash(copy \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\ekap-editor\\\\test.ekap\" \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\ekap-editor-next\\\\public\\\\test.ekap\")",
       "Bash(npm run dev)",
       "Bash(python3:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(npm run lint)"
     ]
   }
 }

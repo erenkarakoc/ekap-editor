@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import {
   Search,
   Info,
@@ -69,12 +69,14 @@ const COLUMN_LABELS: Record<string, string> = {
   toplamDecimal: 'Toplam',
 } as const;
 
+let measureTextCanvas: HTMLCanvasElement | null = null;
+
 const measureTextWidth = (text: string, font: string = '12px sans-serif'): number => {
   if (typeof window === 'undefined') return 0;
-  const canvas =
-    (measureTextWidth as any).canvas ||
-    ((measureTextWidth as any).canvas = document.createElement('canvas'));
-  const context = canvas.getContext('2d');
+  if (!measureTextCanvas) {
+    measureTextCanvas = document.createElement('canvas');
+  }
+  const context = measureTextCanvas.getContext('2d');
   if (!context) return text.length * 8;
   context.font = font;
   return context.measureText(text).width;
@@ -137,8 +139,70 @@ export function EditorView({
   });
 
   const [containerWidth, setContainerWidth] = useState(0);
+  const hasFittedRef = useRef(false);
+  const prevLayoutKeyRef = useRef<string>('');
 
-  // Watch for container resize
+  // Helper function to adjust column widths based on container width
+  const adjustColumnWidths = useCallback(
+    (newContainerWidth: number) => {
+      if (!isActive || newContainerWidth <= 0) return;
+
+      const visibleKeys = visibleColumns;
+      const layoutKey = `${visibleKeys.join(',')}-${newContainerWidth}`;
+      if (prevLayoutKeyRef.current === layoutKey) return;
+      prevLayoutKeyRef.current = layoutKey;
+
+      setColumnWidths((prev) => {
+        const currentTotal = visibleKeys.reduce((sum, key) => sum + (prev[key] || 0), 0);
+        const buffer = 2;
+        const targetWidth = newContainerWidth - buffer;
+
+        if (currentTotal > targetWidth) {
+          const excess = currentTotal - targetWidth;
+
+          if (visibleKeys.includes('aciklama')) {
+            const currentAciklamaWidth = prev.aciklama || 400;
+            const minAciklama = 100;
+            const canShrinkAciklama = Math.max(0, currentAciklamaWidth - minAciklama);
+
+            if (canShrinkAciklama >= excess) {
+              return { ...prev, aciklama: Math.max(minAciklama, prev.aciklama - excess) };
+            }
+          }
+
+          const newTotalAfterAciklama = visibleKeys.reduce(
+            (sum, key) => sum + (key === 'aciklama' ? 100 : prev[key] || 0),
+            0,
+          );
+          const remainingExcess = newTotalAfterAciklama - targetWidth;
+
+          if (remainingExcess > 0) {
+            const shrinkableTotal = visibleKeys.reduce((sum, k) => sum + (prev[k] || 0), 0);
+            const scale = (shrinkableTotal - remainingExcess) / shrinkableTotal;
+            const next = { ...prev };
+            visibleKeys.forEach((key) => {
+              next[key] = Math.max(40, Math.floor(prev[key] * scale));
+            });
+            if (visibleKeys.includes('aciklama')) next.aciklama = 100;
+            return next;
+          }
+
+          if (visibleKeys.includes('aciklama')) return { ...prev, aciklama: 100 };
+          return prev;
+        } else if (currentTotal < targetWidth && visibleKeys.includes('aciklama')) {
+          const diff = targetWidth - currentTotal;
+          if (diff > 0) return { ...prev, aciklama: (prev.aciklama || 0) + diff };
+        }
+
+        return prev;
+      });
+
+      hasFittedRef.current = true;
+    },
+    [isActive, visibleColumns],
+  );
+
+  // Watch for container resize and adjust columns
   useLayoutEffect(() => {
     if (!tableContainerRef.current) return;
 
@@ -146,12 +210,22 @@ export function EditorView({
       const width = entries[0].contentRect.width;
       if (width > 0) {
         setContainerWidth(width);
+        adjustColumnWidths(width);
       }
     });
 
     observer.observe(tableContainerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [adjustColumnWidths]);
+
+  // Also adjust when visible columns change - this is a valid pattern for responsive layouts
+  useEffect(() => {
+    if (containerWidth > 0) {
+      prevLayoutKeyRef.current = ''; // Reset to force recalculation
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid pattern for responsive layout adjustment
+      adjustColumnWidths(containerWidth);
+    }
+  }, [visibleColumns, containerWidth, adjustColumnWidths]);
 
   const handleColumnResize = (key: string, newWidth: number) => {
     if (containerWidth > 0) {
@@ -160,85 +234,15 @@ export function EditorView({
         .filter((k) => k !== key)
         .reduce((sum, k) => sum + (columnWidths[k] || 0), 0);
 
-      // Constraint: Total width <= containerWidth
-      // 2px buffer for border-l and potential rounding issues
       const maxAvailable = Math.max(40, containerWidth - otherColumnsWidth - 2);
       newWidth = Math.min(newWidth, maxAvailable);
     }
 
     setColumnWidths((prev) => ({
       ...prev,
-      [key]: Math.max(40, newWidth), // Minimum 40px
+      [key]: Math.max(40, newWidth),
     }));
   };
-
-  const hasFittedRef = useRef(false);
-
-  // Fit table horizontally whenever visibility changes, container resizes, or document changes
-  useLayoutEffect(() => {
-    if (!isActive || containerWidth <= 0) return;
-
-    const visibleKeys = visibleColumns;
-    const currentTotal = visibleKeys.reduce((sum, key) => sum + (columnWidths[key] || 0), 0);
-
-    // buffer for borders and potential rounding issues
-    const buffer = 2;
-    const targetWidth = containerWidth - buffer;
-
-    if (currentTotal > targetWidth) {
-      // Table is too wide, need to shrink it
-      const excess = currentTotal - targetWidth;
-
-      // Try shrinking aciklama first if it's visible
-      if (visibleKeys.includes('aciklama')) {
-        const currentAciklamaWidth = columnWidths.aciklama || 400;
-        const minAciklama = 100;
-        const canShrinkAciklama = Math.max(0, currentAciklamaWidth - minAciklama);
-
-        if (canShrinkAciklama >= excess) {
-          setColumnWidths((prev) => ({
-            ...prev,
-            aciklama: Math.max(minAciklama, prev.aciklama - excess),
-          }));
-          return;
-        } else if (canShrinkAciklama > 0) {
-          setColumnWidths((prev) => ({ ...prev, aciklama: minAciklama }));
-          // Continue shrinking other columns if needed
-        }
-      }
-
-      // Proportionally shrink all columns if aciklama shrink wasn't enough
-      const newTotalAfterAciklama = visibleKeys.reduce(
-        (sum, key) => sum + (key === 'aciklama' ? 100 : columnWidths[key] || 0),
-        0,
-      );
-      const remainingExcess = newTotalAfterAciklama - targetWidth;
-
-      if (remainingExcess > 0) {
-        const shrinkableTotal = visibleKeys.reduce((sum, k) => sum + (columnWidths[k] || 0), 0);
-        const scale = (shrinkableTotal - remainingExcess) / shrinkableTotal;
-
-        setColumnWidths((prev) => {
-          const next = { ...prev };
-          visibleKeys.forEach((key) => {
-            next[key] = Math.max(40, Math.floor(prev[key] * scale));
-          });
-          return next;
-        });
-      }
-    } else if (currentTotal < targetWidth && visibleKeys.includes('aciklama')) {
-      // Table is narrower than container, expand aciklama
-      const diff = targetWidth - currentTotal;
-      if (diff > 0) {
-        setColumnWidths((prev) => ({
-          ...prev,
-          aciklama: (prev.aciklama || 0) + diff,
-        }));
-      }
-    }
-
-    hasFittedRef.current = true;
-  }, [isActive, visibleColumns, containerWidth]); // Depend on visibility, container width
 
   // Focus search on Ctrl+K if active
   useEffect(() => {
@@ -259,38 +263,61 @@ export function EditorView({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isActive, showInfo]);
 
-  const handlePriceChange = (itemIndex: number, newPriceValue: string) => {
-    const priceValue = parseTurkishNumber(newPriceValue);
+  const handlePriceChange = useCallback(
+    (itemIndex: number, newPriceValue: string) => {
+      const priceValue = parseTurkishNumber(newPriceValue);
 
-    // If parsing failed (returned 0 due to error), check if original was 0 or invalid
-    if (priceValue.isZero() && newPriceValue !== '0' && newPriceValue !== '0,00') {
-      // Re-render to original value or just ignore update
-      // For now, we update with the parsed value (0) or we could revert
-      // But parseTurkishNumber is now safe.
-    }
+      // If parsing failed (returned 0 due to error), check if original was 0 or invalid
+      if (priceValue.isZero() && newPriceValue !== '0' && newPriceValue !== '0,00') {
+        // Re-render to original value or just ignore update
+        // For now, we update with the parsed value (0) or we could revert
+        // But parseTurkishNumber is now safe.
+      }
 
-    if (priceValue.isNegative()) {
-      return;
-    }
+      if (priceValue.isNegative()) {
+        return;
+      }
 
-    const updatedDoc = updateItemPrice(document, itemIndex, priceValue);
-    onUpdate(updatedDoc);
-  };
+      const updatedDoc = updateItemPrice(document, itemIndex, priceValue);
+      onUpdate(updatedDoc);
+    },
+    [document, onUpdate],
+  );
 
-  const handleSort = (key: SortKey) => {
-    onSortChange({
-      key,
-      direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc',
-    });
-  };
+  const handleSort = useCallback(
+    (key: SortKey) => {
+      onSortChange({
+        key,
+        direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc',
+      });
+    },
+    [sortConfig, onSortChange],
+  );
 
-  const handleSortExplicit = (key: string, direction: 'asc' | 'desc') => {
-    onSortChange({ key: key as SortKey, direction });
-  };
+  const handleSortExplicit = useCallback(
+    (key: SortKey, direction: 'asc' | 'desc') => {
+      onSortChange({ key, direction });
+    },
+    [onSortChange],
+  );
 
-  const handleHideColumn = (key: string) => {
-    toggleColumn(key);
-  };
+  const toggleColumn = useCallback((key: string) => {
+    setVisibleColumns((prev) =>
+      prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : [...prev, key].sort((a, b) => {
+            const allKeys = Object.keys(COLUMN_LABELS);
+            return allKeys.indexOf(a) - allKeys.indexOf(b);
+          }),
+    );
+  }, []);
+
+  const handleHideColumn = useCallback(
+    (key: string) => {
+      toggleColumn(key);
+    },
+    [toggleColumn],
+  );
 
   const handleFitToContent = (key: string) => {
     const currentContainerWidth = tableContainerRef.current?.clientWidth || 0;
@@ -299,30 +326,94 @@ export function EditorView({
     // Scan ALL rows to find the row with largest content width
     let maxContentWidth = 40; // minimum
 
-    // Include header width
+    // Include header width (bold 12px uppercase with sort icon)
     const label = COLUMN_LABELS[key] || '';
-    const headerWidth = measureTextWidth(label, 'bold 12px sans-serif') + 32; // padding + sort icon
+    const headerWidth = measureTextWidth(label.toUpperCase(), 'bold 12px system-ui') + 40; // padding + sort icon + resize handle
     maxContentWidth = Math.max(maxContentWidth, headerWidth);
+
+    // Get font and padding based on column type - matching actual cell rendering
+    const getColumnStyle = (
+      columnKey: string,
+    ): { font: string; padding: number; getValue: (item: EkapItem) => string } => {
+      switch (columnKey) {
+        // Code columns with <code> tag: font-mono text-[10px] + badge padding
+        case 'kalemId':
+        case 'isKalemiNo':
+        case 'urunKodu':
+          return {
+            font: '10px monospace',
+            padding: 32, // cell py-1 + code px-1 + badge bg padding
+            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
+          };
+
+        // Number columns with font-mono text-sm (14px)
+        case 'adetDecimal':
+        case 'toplamDecimal':
+          return {
+            font: '14px monospace',
+            padding: 24, // cell padding
+            getValue: (item) => formatTurkishNumber(item[columnKey]),
+          };
+
+        // Price input column: font-mono text-sm + input padding
+        case 'fiyatDecimal':
+          return {
+            font: '14px monospace',
+            padding: 40, // cell p-1 (8px) + input px-3 (24px) + extra buffer
+            getValue: (item) => formatTurkishNumber(item.fiyatDecimal),
+          };
+
+        // Small text columns: text-xs (12px)
+        case 'siraNo':
+        case 'birim':
+        case 'paraBirimi':
+          return {
+            font: '12px system-ui',
+            padding: 16,
+            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
+          };
+
+        // Description column: text-sm (14px)
+        case 'aciklama':
+          return {
+            font: '14px system-ui',
+            padding: 16,
+            getValue: (item) => item.aciklama,
+          };
+
+        // Default text columns
+        default:
+          return {
+            font: '14px system-ui',
+            padding: 16,
+            getValue: (item) => String(item[columnKey as keyof EkapItem] || ''),
+          };
+      }
+    };
+
+    const style = getColumnStyle(key);
 
     // Check all items to find the one with the largest content
     for (const item of document.items) {
-      let val = '';
-      if (key === 'adetDecimal' || key === 'fiyatDecimal' || key === 'toplamDecimal') {
-        val = formatTurkishNumber((item as any)[key]);
-      } else {
-        val = String((item as any)[key] || '');
-      }
-      // Use monospace font for code-like columns
-      const isCodeColumn = ['kalemId', 'isKalemiNo', 'urunKodu'].includes(key);
-      const font = isCodeColumn ? '10px monospace' : '12px sans-serif';
-      const padding = isCodeColumn ? 24 : 16; // extra padding for code badges
-      const width = measureTextWidth(val, font) + padding;
+      const val = style.getValue(item);
+      const width = measureTextWidth(val, style.font) + style.padding;
       if (width > maxContentWidth) maxContentWidth = width;
+    }
+
+    // For input columns, also check actual DOM input values (in case user typed but hasn't committed)
+    if (key === 'fiyatDecimal' && tableContainerRef.current) {
+      const inputs = tableContainerRef.current.querySelectorAll('input');
+      inputs.forEach((input) => {
+        const inputValue = input.value;
+        if (inputValue) {
+          const width = measureTextWidth(inputValue, style.font) + style.padding;
+          if (width > maxContentWidth) maxContentWidth = width;
+        }
+      });
     }
 
     // Calculate what the total width would be with the new column width
     const visibleKeys = visibleColumns;
-    const currentColumnWidth = columnWidths[key] || 0;
     const otherColumnsWidth = visibleKeys
       .filter((k) => k !== key)
       .reduce((sum, k) => sum + (columnWidths[k] || 0), 0);
@@ -396,62 +487,61 @@ export function EditorView({
     }
   };
 
-  const filteredItems = (document.items || [])
-    .filter(
-      (item) =>
-        item.aciklama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.isKalemiNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.siraNo.includes(searchQuery),
-    )
-    .sort((a, b) => {
-      const { key, direction } = sortConfig;
-      const multiplier = direction === 'asc' ? 1 : -1;
+  const filteredItems = useMemo(
+    () =>
+      (document.items || [])
+        .filter(
+          (item) =>
+            item.aciklama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.isKalemiNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.siraNo.includes(searchQuery),
+        )
+        .sort((a, b) => {
+          const { key, direction } = sortConfig;
+          const multiplier = direction === 'asc' ? 1 : -1;
 
-      if (key === 'adetDecimal' || key === 'fiyatDecimal' || key === 'toplamDecimal') {
-        return a[key].minus(b[key]).toNumber() * multiplier;
-      }
+          if (key === 'adetDecimal' || key === 'fiyatDecimal' || key === 'toplamDecimal') {
+            return a[key].minus(b[key]).toNumber() * multiplier;
+          }
 
-      if (key === 'index') {
-        return (a.index - b.index) * multiplier;
-      }
+          if (key === 'index') {
+            return (a.index - b.index) * multiplier;
+          }
 
-      if (key === 'siraNo') {
-        const aNum = parseInt(a.siraNo);
-        const bNum = parseInt(b.siraNo);
-        if (
-          !isNaN(aNum) &&
-          !isNaN(bNum) &&
-          String(aNum) === a.siraNo &&
-          String(bNum) === b.siraNo
-        ) {
-          return (aNum - bNum) * multiplier;
-        }
-        return a.siraNo.localeCompare(b.siraNo, 'tr') * multiplier;
-      }
+          if (key === 'siraNo') {
+            const aNum = parseInt(a.siraNo);
+            const bNum = parseInt(b.siraNo);
+            if (
+              !isNaN(aNum) &&
+              !isNaN(bNum) &&
+              String(aNum) === a.siraNo &&
+              String(bNum) === b.siraNo
+            ) {
+              return (aNum - bNum) * multiplier;
+            }
+            return a.siraNo.localeCompare(b.siraNo, 'tr') * multiplier;
+          }
 
-      const aVal = String(a[key as keyof EkapItem] || '');
-      const bVal = String(b[key as keyof EkapItem] || '');
+          const aVal = String(a[key as keyof EkapItem] || '');
+          const bVal = String(b[key as keyof EkapItem] || '');
 
-      return aVal.localeCompare(bVal, 'tr') * multiplier;
-    });
+          return aVal.localeCompare(bVal, 'tr') * multiplier;
+        }),
+    [document.items, searchQuery, sortConfig],
+  );
 
-  const grandTotal =
-    document.items.reduce((sum, item) => sum.plus(item.toplamDecimal), new Decimal(0)) ||
-    new Decimal(0);
+  const grandTotal = useMemo(
+    () =>
+      document.items.reduce((sum, item) => sum.plus(item.toplamDecimal), new Decimal(0)) ||
+      new Decimal(0),
+    [document.items],
+  );
 
   const visibleKeys = visibleColumns;
-  const totalTableWidth = visibleKeys.reduce((sum, key) => sum + (columnWidths[key] || 0), 0);
-
-  const toggleColumn = (key: string) => {
-    setVisibleColumns((prev) =>
-      prev.includes(key)
-        ? prev.filter((k) => k !== key)
-        : [...prev, key].sort((a, b) => {
-            const allKeys = Object.keys(COLUMN_LABELS);
-            return allKeys.indexOf(a) - allKeys.indexOf(b);
-          }),
-    );
-  };
+  const totalTableWidth = useMemo(
+    () => visibleKeys.reduce((sum, key) => sum + (columnWidths[key] || 0), 0),
+    [visibleKeys, columnWidths],
+  );
 
   // If not active, we can return null OR keep it rendered but hidden for state preservation.
   // Using generic hidden class is often better for keeping scroll position etc. if needed,
@@ -792,7 +882,7 @@ export function EditorView({
                   </TableCell>
                 )}
                 {visibleColumns.includes('fiyatDecimal') && (
-                  <TableCell className="border-border overflow-hidden border-r border-b p-1">
+                  <TableCell className="bg-accent border-border overflow-hidden border-r border-b p-1">
                     <Input
                       key={`price-${item.index}-${item.fiyat}`}
                       className="bg-input h-8 text-right font-mono text-sm"
@@ -915,10 +1005,10 @@ export function EditorView({
 
 interface SortableHeadProps {
   label: string;
-  sortKey: string;
+  sortKey: SortKey;
   activeConfig: { key: SortKey | null; direction: 'asc' | 'desc' | null };
-  onSort: (key: any) => void;
-  onSortExplicit?: (key: any, direction: 'asc' | 'desc') => void;
+  onSort: (key: SortKey) => void;
+  onSortExplicit?: (key: SortKey, direction: 'asc' | 'desc') => void;
   width: number;
   onResize: (width: number) => void;
   onHide?: (key: string) => void;

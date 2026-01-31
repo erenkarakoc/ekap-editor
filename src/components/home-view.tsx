@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useMemo } from 'react';
 import { FileText, Plus, Clock, Search, Monitor, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +32,13 @@ interface HomeViewProps {
   onClearRecent?: () => void;
 }
 
+const dateFormatter = new Intl.DateTimeFormat('tr-TR', {
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
 export function HomeView({
   sessions,
   recentFiles,
@@ -39,21 +48,18 @@ export function HomeView({
 }: HomeViewProps) {
   const [search, setSearch] = React.useState('');
 
-  const filteredRecent = recentFiles.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase()),
+  const filteredRecent = useMemo(
+    () => recentFiles.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())),
+    [recentFiles, search],
   );
 
-  const filteredActive = sessions.filter((s) =>
-    s.fileName.toLowerCase().includes(search.toLowerCase()),
+  const filteredActive = useMemo(
+    () => sessions.filter((s) => s.fileName.toLowerCase().includes(search.toLowerCase())),
+    [sessions, search],
   );
 
   const formatDate = (ts: number) => {
-    return new Intl.DateTimeFormat('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(ts));
+    return dateFormatter.format(new Date(ts));
   };
 
   return (
