@@ -293,45 +293,107 @@ export function EditorView({
   };
 
   const handleFitToContent = (key: string) => {
-    const containerWidth = tableContainerRef.current?.clientWidth || 0;
-    if (containerWidth <= 0) return;
+    const currentContainerWidth = tableContainerRef.current?.clientWidth || 0;
+    if (currentContainerWidth <= 0) return;
 
-    // Sample up to 100 rows to find max content width
-    const sampleSize = Math.min(document.items.length, 100);
-    let maxWidth = 40; // minimum
+    // Scan ALL rows to find the row with largest content width
+    let maxContentWidth = 40; // minimum
 
     // Include header width
     const label = COLUMN_LABELS[key] || '';
-    maxWidth = Math.max(maxWidth, measureTextWidth(label, 'bold 12px sans-serif') + 32); // padding + sort icon
+    const headerWidth = measureTextWidth(label, 'bold 12px sans-serif') + 32; // padding + sort icon
+    maxContentWidth = Math.max(maxContentWidth, headerWidth);
 
-    for (let i = 0; i < sampleSize; i++) {
-      const item = document.items[i];
+    // Check all items to find the one with the largest content
+    for (const item of document.items) {
       let val = '';
       if (key === 'adetDecimal' || key === 'fiyatDecimal' || key === 'toplamDecimal') {
         val = formatTurkishNumber((item as any)[key]);
       } else {
         val = String((item as any)[key] || '');
       }
-      const width = measureTextWidth(val, '12px sans-serif') + 16; // padding
-      if (width > maxWidth) maxWidth = width;
+      // Use monospace font for code-like columns
+      const isCodeColumn = ['kalemId', 'isKalemiNo', 'urunKodu'].includes(key);
+      const font = isCodeColumn ? '10px monospace' : '12px sans-serif';
+      const padding = isCodeColumn ? 24 : 16; // extra padding for code badges
+      const width = measureTextWidth(val, font) + padding;
+      if (width > maxContentWidth) maxContentWidth = width;
     }
 
-    // Apply same overflow prevention logic
+    // Calculate what the total width would be with the new column width
     const visibleKeys = visibleColumns;
+    const currentColumnWidth = columnWidths[key] || 0;
     const otherColumnsWidth = visibleKeys
       .filter((k) => k !== key)
       .reduce((sum, k) => sum + (columnWidths[k] || 0), 0);
 
-    const maxAvailable = Math.max(40, containerWidth - otherColumnsWidth - 4);
-    const finalWidth = Math.min(maxWidth, maxAvailable);
+    const buffer = 4;
+    const availableWidth = currentContainerWidth - buffer;
+    const newTotalWidth = otherColumnsWidth + maxContentWidth;
 
-    setColumnWidths((prev) => ({ ...prev, [key]: finalWidth }));
+    if (newTotalWidth <= availableWidth) {
+      // Fits within container, just set the new width
+      setColumnWidths((prev) => ({ ...prev, [key]: maxContentWidth }));
+    } else {
+      // Would overflow - need to shrink the widest OTHER column
+      const overflow = newTotalWidth - availableWidth;
+
+      // Find the widest visible column (excluding the one being fitted)
+      let widestKey = '';
+      let widestWidth = 0;
+      for (const k of visibleKeys) {
+        if (k !== key && (columnWidths[k] || 0) > widestWidth) {
+          widestKey = k;
+          widestWidth = columnWidths[k] || 0;
+        }
+      }
+
+      if (widestKey && widestWidth > 40) {
+        // Shrink the widest column to make room (but maintain minimum 40px)
+        const shrinkAmount = Math.min(overflow, widestWidth - 40);
+        const newWidestWidth = widestWidth - shrinkAmount;
+        const remainingOverflow = overflow - shrinkAmount;
+
+        // If still overflowing after shrinking widest, cap the target column
+        const finalTargetWidth =
+          remainingOverflow > 0 ? maxContentWidth - remainingOverflow : maxContentWidth;
+
+        setColumnWidths((prev) => ({
+          ...prev,
+          [key]: Math.max(40, finalTargetWidth),
+          [widestKey]: Math.max(40, newWidestWidth),
+        }));
+      } else {
+        // No room to shrink other columns, just cap at available space
+        const maxAvailable = Math.max(40, availableWidth - otherColumnsWidth);
+        setColumnWidths((prev) => ({ ...prev, [key]: maxAvailable }));
+      }
+    }
   };
 
   const handleShrinkToTitle = (key: string) => {
+    const currentContainerWidth = tableContainerRef.current?.clientWidth || 0;
     const label = COLUMN_LABELS[key] || '';
-    const width = Math.max(40, measureTextWidth(label, 'bold 12px sans-serif') + 36); // padding + sort icon
-    setColumnWidths((prev) => ({ ...prev, [key]: width }));
+    const titleWidth = Math.max(40, measureTextWidth(label, 'bold 12px sans-serif') + 36); // padding + sort icon
+
+    const currentWidth = columnWidths[key] || 0;
+    const shrinkAmount = currentWidth - titleWidth;
+
+    if (shrinkAmount > 0 && currentContainerWidth > 0) {
+      // When shrinking, expand the 'aciklama' column if visible to use freed space
+      const visibleKeys = visibleColumns;
+      if (visibleKeys.includes('aciklama') && key !== 'aciklama') {
+        setColumnWidths((prev) => ({
+          ...prev,
+          [key]: titleWidth,
+          aciklama: (prev.aciklama || 0) + shrinkAmount,
+        }));
+      } else {
+        setColumnWidths((prev) => ({ ...prev, [key]: titleWidth }));
+      }
+    } else {
+      setColumnWidths((prev) => ({ ...prev, [key]: titleWidth }));
+    }
   };
 
   const filteredItems = (document.items || [])
