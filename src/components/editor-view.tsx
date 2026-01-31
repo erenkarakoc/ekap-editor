@@ -9,8 +9,7 @@ import {
   ArrowUpDown,
   Settings2,
   EyeOff,
-  Maximize2,
-  Minimize2,
+  ArrowLeftRight,
   ArrowUpNarrowWide,
   ArrowDownWideNarrow,
 } from 'lucide-react';
@@ -1091,12 +1090,8 @@ function SortableHead({
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={() => onFit?.(sortKey)} className="cursor-pointer gap-2">
-            <Maximize2 className="size-4" />
-            <span>Büyült</span>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => onShrink?.(sortKey)} className="cursor-pointer gap-2">
-            <Minimize2 className="size-4" />
-            <span>Küçült</span>
+            <ArrowLeftRight className="size-4" />
+            <span>Sığdır</span>
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem
