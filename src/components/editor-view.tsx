@@ -113,6 +113,7 @@ export function EditorView({
 }: EditorViewProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -872,9 +873,17 @@ export function EditorView({
                 )}
                 {visibleColumns.includes('isKalemiNo') && (
                   <TableCell className="border-border truncate overflow-hidden border-r border-b py-1 whitespace-nowrap">
-                    <code className="bg-muted text-muted-foreground rounded px-1 py-0.5 font-mono text-[10px]">
-                      {item.isKalemiNo}
-                    </code>
+                    <button
+                      type="button"
+                      className="bg-muted text-muted-foreground cursor-pointer rounded px-1 py-0.5 font-mono text-[10px] transition-transform active:scale-96"
+                      onClick={() => {
+                        navigator.clipboard.writeText(item.isKalemiNo);
+                        setCopiedId(item.kalemId);
+                        setTimeout(() => setCopiedId(null), 1000);
+                      }}
+                    >
+                      {copiedId === item.kalemId ? 'Kopyalandı' : item.isKalemiNo}
+                    </button>
                   </TableCell>
                 )}
                 {visibleColumns.includes('aciklama') && (
