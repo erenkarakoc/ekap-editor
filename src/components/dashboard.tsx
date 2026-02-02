@@ -214,53 +214,70 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   };
 
-  const updateSession = (id: string, updates: Partial<TabSession>) => {
+  const updateSession = useCallback((id: string, updates: Partial<TabSession>) => {
     setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
-  };
+  }, []);
+
+  const handleSearchChange = useCallback(
+    (sessionId: string, query: string) => {
+      updateSession(sessionId, { searchQuery: query });
+    },
+    [updateSession],
+  );
+
+  const handleSortChange = useCallback(
+    (sessionId: string, config: SortConfig) => {
+      updateSession(sessionId, { sortConfig: config });
+    },
+    [updateSession],
+  );
 
   const handleDocumentUpdate = (doc: EkapDocument) => {
     if (!activeTabId) return;
     updateSession(activeTabId, { document: doc, isDirty: true });
   };
 
-  const saveSession = async (session: TabSession) => {
-    setIsLoading(true);
-    try {
-      const zipData = await createEkapZip(session.document);
-      const encryptedData = encryptEkap(zipData, session.password);
+  const saveSession = useCallback(
+    async (session: TabSession) => {
+      setIsLoading(true);
+      try {
+        const zipData = await createEkapZip(session.document);
+        const encryptedData = encryptEkap(zipData, session.password);
 
-      const blob = new Blob([encryptedData], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      const a = window.document.createElement('a');
-      a.href = url;
-      a.download = session.fileName.replace('.ekap', '_modified.ekap') || 'doc.ekap';
-      window.document.body.appendChild(a);
-      a.click();
-      window.document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+        const blob = new Blob([encryptedData], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = window.document.createElement('a');
+        a.href = url;
+        a.download = session.fileName.replace('.ekap', '_modified.ekap') || 'doc.ekap';
+        window.document.body.appendChild(a);
+        a.click();
+        window.document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-      updateSession(session.id, { isDirty: false });
+        updateSession(session.id, { isDirty: false });
 
-      addToRecent({
-        name: session.fileName,
-        size: encryptedData.byteLength,
-      });
+        addToRecent({
+          name: session.fileName,
+          size: encryptedData.byteLength,
+        });
 
-      toast.success('Kaydedildi');
-      return true;
-    } catch (error) {
-      console.error(error);
-      toast.error('Kaydetme hatası');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        toast.success('Kaydedildi');
+        return true;
+      } catch (error) {
+        console.error(error);
+        toast.error('Kaydetme hatası');
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [updateSession],
+  );
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!activeSession) return;
     await saveSession(activeSession);
-  };
+  }, [activeSession, saveSession]);
 
   const handleSaveAndClose = async () => {
     if (!closingSession) return;
@@ -287,12 +304,12 @@ export default function Dashboard({ user }: DashboardProps) {
       }
       if (e.ctrlKey && e.key === 's') {
         e.preventDefault();
-        if (activeSession) handleSave();
+        handleSave();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeSession]); // eslint-disable-line
+  }, [handleSave]);
 
   return (
     <div className="bg-background selection:bg-primary/10 flex h-screen flex-col">
@@ -475,9 +492,9 @@ export default function Dashboard({ user }: DashboardProps) {
                 onUpdate={handleDocumentUpdate}
                 isActive={session.id === activeTabId}
                 searchQuery={session.searchQuery}
-                onSearchChange={(q) => updateSession(session.id, { searchQuery: q })}
+                onSearchChange={(q) => handleSearchChange(session.id, q)}
                 sortConfig={session.sortConfig}
-                onSortChange={(c) => updateSession(session.id, { sortConfig: c })}
+                onSortChange={(c) => handleSortChange(session.id, c)}
               />
             ))}
 

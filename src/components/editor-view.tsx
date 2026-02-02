@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import {
   Search,
   Info,
@@ -12,6 +12,8 @@ import {
   ArrowLeftRight,
   ArrowUpNarrowWide,
   ArrowDownWideNarrow,
+  FileSpreadsheet,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +45,8 @@ import {
   formatTurkishNumber,
 } from '@/lib/ekap-crypto';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { UploadPricesDialog } from '@/components/upload-prices-dialog';
+import type { PriceUpdate } from '@/lib/excel-parser';
 import Decimal from 'decimal.js';
 
 type SortKey = keyof EkapItem | 'siraNoInt';
@@ -114,8 +118,19 @@ export function EditorView({
   const [showInfo, setShowInfo] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_VISIBLE_COLUMNS);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close dialogs when tab becomes inactive to prevent cross-tab bugs
+  // (dialogs use Portals and would remain visible even when EditorView is hidden)
+  useEffect(() => {
+    if (!isActive) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Required to close Portal-based dialogs when tab switches
+      setUploadDialogOpen(false);
+      setShowInfo(false);
+    }
+  }, [isActive]);
 
   const zeroPriceCount = useMemo(() => {
     return document.items.filter((item) => item.fiyatDecimal.isZero()).length;
@@ -394,6 +409,17 @@ export function EditorView({
     [document, onUpdate],
   );
 
+  const handleApplyExcelPrices = useCallback(
+    (updates: PriceUpdate[]) => {
+      let updatedDoc = document;
+      for (const update of updates) {
+        updatedDoc = updateItemPrice(updatedDoc, update.itemIndex, update.newPrice);
+      }
+      onUpdate(updatedDoc);
+    },
+    [document, onUpdate],
+  );
+
   const handleSort = useCallback(
     (key: SortKey) => {
       onSortChange({
@@ -429,100 +455,106 @@ export function EditorView({
     [toggleColumn],
   );
 
-  const handleFitToContent = (key: string) => {
-    const currentContainerWidth = tableContainerRef.current?.clientWidth || 0;
-    if (currentContainerWidth <= 0) return;
+  const handleFitToContent = useCallback(
+    (key: string) => {
+      const currentContainerWidth = tableContainerRef.current?.clientWidth || 0;
+      if (currentContainerWidth <= 0) return;
 
-    // Use shared helper for base optimal width calculation
-    let maxContentWidth = calculateOptimalColumnWidth(key);
+      // Use shared helper for base optimal width calculation
+      let maxContentWidth = calculateOptimalColumnWidth(key);
 
-    // For input columns, also check actual DOM input values (in case user typed but hasn't committed)
-    if (key === 'fiyatDecimal' && tableContainerRef.current) {
-      const style = getColumnStyle(key);
-      const inputs = tableContainerRef.current.querySelectorAll('input');
-      inputs.forEach((input) => {
-        const inputValue = input.value;
-        if (inputValue) {
-          const width = measureTextWidth(inputValue, style.font) + style.padding;
-          if (width > maxContentWidth) maxContentWidth = width;
-        }
-      });
-    }
-
-    // Calculate what the total width would be with the new column width
-    const visibleKeys = visibleColumns;
-    const otherColumnsWidth = visibleKeys
-      .filter((k) => k !== key)
-      .reduce((sum, k) => sum + (columnWidths[k] || 0), 0);
-
-    const buffer = 4;
-    const availableWidth = currentContainerWidth - buffer;
-    const newTotalWidth = otherColumnsWidth + maxContentWidth;
-
-    if (newTotalWidth <= availableWidth) {
-      // Fits within container, just set the new width
-      setColumnWidths((prev) => ({ ...prev, [key]: maxContentWidth }));
-    } else {
-      // Would overflow - need to shrink the widest OTHER column
-      const overflow = newTotalWidth - availableWidth;
-
-      // Find the widest visible column (excluding the one being fitted)
-      let widestKey = '';
-      let widestWidth = 0;
-      for (const k of visibleKeys) {
-        if (k !== key && (columnWidths[k] || 0) > widestWidth) {
-          widestKey = k;
-          widestWidth = columnWidths[k] || 0;
-        }
+      // For input columns, also check actual DOM input values (in case user typed but hasn't committed)
+      if (key === 'fiyatDecimal' && tableContainerRef.current) {
+        const style = getColumnStyle(key);
+        const inputs = tableContainerRef.current.querySelectorAll('input');
+        inputs.forEach((input) => {
+          const inputValue = input.value;
+          if (inputValue) {
+            const width = measureTextWidth(inputValue, style.font) + style.padding;
+            if (width > maxContentWidth) maxContentWidth = width;
+          }
+        });
       }
 
-      if (widestKey && widestWidth > 40) {
-        // Shrink the widest column to make room (but maintain minimum 40px)
-        const shrinkAmount = Math.min(overflow, widestWidth - 40);
-        const newWidestWidth = widestWidth - shrinkAmount;
-        const remainingOverflow = overflow - shrinkAmount;
-
-        // If still overflowing after shrinking widest, cap the target column
-        const finalTargetWidth =
-          remainingOverflow > 0 ? maxContentWidth - remainingOverflow : maxContentWidth;
-
-        setColumnWidths((prev) => ({
-          ...prev,
-          [key]: Math.max(40, finalTargetWidth),
-          [widestKey]: Math.max(40, newWidestWidth),
-        }));
-      } else {
-        // No room to shrink other columns, just cap at available space
-        const maxAvailable = Math.max(40, availableWidth - otherColumnsWidth);
-        setColumnWidths((prev) => ({ ...prev, [key]: maxAvailable }));
-      }
-    }
-  };
-
-  const handleShrinkToTitle = (key: string) => {
-    const currentContainerWidth = tableContainerRef.current?.clientWidth || 0;
-    const label = COLUMN_LABELS[key] || '';
-    const titleWidth = Math.max(40, measureTextWidth(label, 'bold 12px sans-serif') + 36); // padding + sort icon
-
-    const currentWidth = columnWidths[key] || 0;
-    const shrinkAmount = currentWidth - titleWidth;
-
-    if (shrinkAmount > 0 && currentContainerWidth > 0) {
-      // When shrinking, expand the 'aciklama' column if visible to use freed space
+      // Calculate what the total width would be with the new column width
       const visibleKeys = visibleColumns;
-      if (visibleKeys.includes('aciklama') && key !== 'aciklama') {
-        setColumnWidths((prev) => ({
-          ...prev,
-          [key]: titleWidth,
-          aciklama: (prev.aciklama || 0) + shrinkAmount,
-        }));
+      const otherColumnsWidth = visibleKeys
+        .filter((k) => k !== key)
+        .reduce((sum, k) => sum + (columnWidths[k] || 0), 0);
+
+      const buffer = 4;
+      const availableWidth = currentContainerWidth - buffer;
+      const newTotalWidth = otherColumnsWidth + maxContentWidth;
+
+      if (newTotalWidth <= availableWidth) {
+        // Fits within container, just set the new width
+        setColumnWidths((prev) => ({ ...prev, [key]: maxContentWidth }));
+      } else {
+        // Would overflow - need to shrink the widest OTHER column
+        const overflow = newTotalWidth - availableWidth;
+
+        // Find the widest visible column (excluding the one being fitted)
+        let widestKey = '';
+        let widestWidth = 0;
+        for (const k of visibleKeys) {
+          if (k !== key && (columnWidths[k] || 0) > widestWidth) {
+            widestKey = k;
+            widestWidth = columnWidths[k] || 0;
+          }
+        }
+
+        if (widestKey && widestWidth > 40) {
+          // Shrink the widest column to make room (but maintain minimum 40px)
+          const shrinkAmount = Math.min(overflow, widestWidth - 40);
+          const newWidestWidth = widestWidth - shrinkAmount;
+          const remainingOverflow = overflow - shrinkAmount;
+
+          // If still overflowing after shrinking widest, cap the target column
+          const finalTargetWidth =
+            remainingOverflow > 0 ? maxContentWidth - remainingOverflow : maxContentWidth;
+
+          setColumnWidths((prev) => ({
+            ...prev,
+            [key]: Math.max(40, finalTargetWidth),
+            [widestKey]: Math.max(40, newWidestWidth),
+          }));
+        } else {
+          // No room to shrink other columns, just cap at available space
+          const maxAvailable = Math.max(40, availableWidth - otherColumnsWidth);
+          setColumnWidths((prev) => ({ ...prev, [key]: maxAvailable }));
+        }
+      }
+    },
+    [visibleColumns, columnWidths, calculateOptimalColumnWidth, getColumnStyle],
+  );
+
+  const handleShrinkToTitle = useCallback(
+    (key: string) => {
+      const currentContainerWidth = tableContainerRef.current?.clientWidth || 0;
+      const label = COLUMN_LABELS[key] || '';
+      const titleWidth = Math.max(40, measureTextWidth(label, 'bold 12px sans-serif') + 36); // padding + sort icon
+
+      const currentWidth = columnWidths[key] || 0;
+      const shrinkAmount = currentWidth - titleWidth;
+
+      if (shrinkAmount > 0 && currentContainerWidth > 0) {
+        // When shrinking, expand the 'aciklama' column if visible to use freed space
+        const visibleKeys = visibleColumns;
+        if (visibleKeys.includes('aciklama') && key !== 'aciklama') {
+          setColumnWidths((prev) => ({
+            ...prev,
+            [key]: titleWidth,
+            aciklama: (prev.aciklama || 0) + shrinkAmount,
+          }));
+        } else {
+          setColumnWidths((prev) => ({ ...prev, [key]: titleWidth }));
+        }
       } else {
         setColumnWidths((prev) => ({ ...prev, [key]: titleWidth }));
       }
-    } else {
-      setColumnWidths((prev) => ({ ...prev, [key]: titleWidth }));
-    }
-  };
+    },
+    [columnWidths, visibleColumns],
+  );
 
   const filteredItems = useMemo(
     () =>
@@ -625,6 +657,15 @@ export function EditorView({
         </div>
 
         <div className="flex items-center justify-between gap-2 md:justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2"
+            onClick={() => setUploadDialogOpen(true)}
+          >
+            <FileSpreadsheet className="size-4" />
+            <span className="hidden sm:inline">Fiyat Yükle</span>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 gap-2">
@@ -873,8 +914,7 @@ export function EditorView({
                 )}
                 {visibleColumns.includes('isKalemiNo') && (
                   <TableCell className="border-border truncate overflow-hidden border-r border-b py-1 whitespace-nowrap">
-                    <button
-                      type="button"
+                    <span
                       className="bg-muted text-muted-foreground cursor-pointer rounded px-1 py-0.5 font-mono text-[10px] transition-transform active:scale-96"
                       onClick={() => {
                         navigator.clipboard.writeText(item.isKalemiNo);
@@ -883,7 +923,7 @@ export function EditorView({
                       }}
                     >
                       {copiedId === item.kalemId ? 'Kopyalandı' : item.isKalemiNo}
-                    </button>
+                    </span>
                   </TableCell>
                 )}
                 {visibleColumns.includes('aciklama') && (
@@ -925,50 +965,78 @@ export function EditorView({
                 )}
                 {visibleColumns.includes('fiyatDecimal') && (
                   <TableCell className="border-border overflow-hidden border-r border-b p-1">
-                    <Input
-                      key={`price-${item.index}-${item.fiyat}`}
-                      className="h-8 border text-right font-mono text-sm"
-                      defaultValue={item.fiyat}
-                      onFocus={(e) => e.target.select()}
-                      onBlur={(e) => handlePriceChange(item.index, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.currentTarget.blur();
-                          return;
-                        }
-
-                        // Allow control keys
-                        const isControl =
-                          e.ctrlKey ||
-                          e.metaKey ||
-                          [
-                            'Backspace',
-                            'Delete',
-                            'Tab',
-                            'ArrowLeft',
-                            'ArrowRight',
-                            'Home',
-                            'End',
-                          ].includes(e.key);
-
-                        if (isControl) return;
-
-                        // Allow digits
-                        if (/^[0-9]$/.test(e.key)) return;
-
-                        // Allow decimal separators (dot and comma) - only once
-                        if (e.key === '.' || e.key === ',') {
-                          const val = e.currentTarget.value;
-                          if (val.includes(',') || val.includes('.')) {
+                    <div className="flex items-center gap-1">
+                      <Input
+                        key={`price-${item.index}-${item.fiyat}`}
+                        data-price-row={i}
+                        className="h-8 border text-right font-mono text-sm"
+                        defaultValue={item.fiyat}
+                        onFocus={(e) => e.target.select()}
+                        onBlur={(e) => handlePriceChange(item.index, e.target.value)}
+                        onKeyDown={(e) => {
+                          // Arrow down/up: move to next/previous row's price input
+                          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                             e.preventDefault();
+                            const currentRow = i;
+                            const targetRow =
+                              e.key === 'ArrowDown' ? currentRow + 1 : currentRow - 1;
+                            const targetInput = tableContainerRef.current?.querySelector(
+                              `input[data-price-row="${targetRow}"]`,
+                            ) as HTMLInputElement | null;
+                            if (targetInput) {
+                              targetInput.focus();
+                              targetInput.select();
+                            }
+                            return;
                           }
-                          return;
-                        }
 
-                        // Block everything else
-                        e.preventDefault();
-                      }}
-                    />
+                          // Enter: commit and move to next row
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handlePriceChange(item.index, e.currentTarget.value);
+                            const targetInput = tableContainerRef.current?.querySelector(
+                              `input[data-price-row="${i + 1}"]`,
+                            ) as HTMLInputElement | null;
+                            if (targetInput) {
+                              targetInput.focus();
+                              targetInput.select();
+                            }
+                            return;
+                          }
+
+                          // Allow control keys
+                          const isControl =
+                            e.ctrlKey ||
+                            e.metaKey ||
+                            [
+                              'Backspace',
+                              'Delete',
+                              'Tab',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'Home',
+                              'End',
+                            ].includes(e.key);
+
+                          if (isControl) return;
+
+                          // Allow digits
+                          if (/^[0-9]$/.test(e.key)) return;
+
+                          // Allow decimal separators (dot and comma) - only once
+                          if (e.key === '.' || e.key === ',') {
+                            const val = e.currentTarget.value;
+                            if (val.includes(',') || val.includes('.')) {
+                              e.preventDefault();
+                            }
+                            return;
+                          }
+
+                          // Block everything else
+                          e.preventDefault();
+                        }}
+                      />
+                    </div>
                   </TableCell>
                 )}
                 {visibleColumns.includes('toplamDecimal') && (
@@ -1041,6 +1109,14 @@ export function EditorView({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* --- Upload Prices Dialog --- */}
+      <UploadPricesDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        document={document}
+        onApply={handleApplyExcelPrices}
+      />
     </div>
   );
 }
@@ -1059,7 +1135,7 @@ interface SortableHeadProps {
   className?: string;
 }
 
-function SortableHead({
+const SortableHead = React.memo(function SortableHead({
   label,
   sortKey,
   activeConfig,
@@ -1163,4 +1239,4 @@ function SortableHead({
       />
     </TableHead>
   );
-}
+});
