@@ -211,6 +211,11 @@ def is_category_line(line: str, prev_line: str = None) -> bool:
     """Check if line is a category header."""
     stripped = line.strip()
 
+    # Don't match section headers like "10.100.-İşçilik Rayiçleri"
+    # These are handled separately by extract_category_from_section_header()
+    if SECTION_HEADER_PATTERN.search(stripped):
+        return False
+
     # Ends with "Rayiçleri"
     if CATEGORY_PATTERN.match(stripped):
         return True
