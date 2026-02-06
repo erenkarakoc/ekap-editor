@@ -80,7 +80,7 @@ export function Header({
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="size-8 cursor-pointer">
+              <Button variant="outline" size="icon-sm" className="size-8 cursor-pointer">
                 <UserIcon className="size-4" />
               </Button>
             </DropdownMenuTrigger>

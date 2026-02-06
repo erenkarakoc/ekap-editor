@@ -28,10 +28,10 @@ import { formatTurkishNumber } from '@/lib/ekap-crypto';
 import {
   parseExcelFile,
   matchExcelToItems,
-  getColumnLetter,
   type ParsedExcel,
   type PriceUpdate,
   type MatchResult,
+  type MatchField,
 } from '@/lib/excel-parser';
 
 interface UploadPricesDialogProps {
@@ -52,6 +52,7 @@ export function UploadPricesDialog({
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [parsedExcel, setParsedExcel] = useState<ParsedExcel | null>(null);
+  const [matchField, setMatchField] = useState<MatchField>('siraNo');
   const [keyColumnIndex, setKeyColumnIndex] = useState<number>(0);
   const [priceColumnIndex, setPriceColumnIndex] = useState<number>(1);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
@@ -65,6 +66,7 @@ export function UploadPricesDialog({
     setStep('upload');
     setFile(null);
     setParsedExcel(null);
+    setMatchField('siraNo');
     setKeyColumnIndex(0);
     setPriceColumnIndex(1);
     setMatchResult(null);
@@ -151,14 +153,14 @@ export function UploadPricesDialog({
     const result = matchExcelToItems(
       parsedExcel,
       document.items,
-      'siraNo',
+      matchField,
       keyColumnIndex,
       priceColumnIndex,
     );
 
     setMatchResult(result);
     setStep('preview');
-  }, [parsedExcel, document.items, keyColumnIndex, priceColumnIndex]);
+  }, [parsedExcel, document.items, matchField, keyColumnIndex, priceColumnIndex]);
 
   const handleApply = useCallback(() => {
     if (!matchResult) return;
@@ -247,7 +249,7 @@ export function UploadPricesDialog({
 
               <p className="text-muted-foreground flex items-center justify-center gap-1 text-center text-xs">
                 <Info className="size-3" />
-                Sıra No ve Fiyat sütunlarını içeren bir Excel dosyası seçin.
+                Sıra No veya Poz No ve Fiyat sütunlarını içeren bir Excel dosyası seçin.
               </p>
 
               {isLoading && (
@@ -266,9 +268,40 @@ export function UploadPricesDialog({
           {/* Step 2: Column Mapping */}
           {step === 'column-mapping' && parsedExcel && (
             <div className="space-y-4">
+              {/* Match field selector */}
+              <div className="space-y-2">
+                <Label>Eşleştirme Alanı</Label>
+                <div className="flex gap-4">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="matchField"
+                      value="siraNo"
+                      checked={matchField === 'siraNo'}
+                      onChange={() => setMatchField('siraNo')}
+                      className="accent-primary"
+                    />
+                    Sıra No
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="matchField"
+                      value="pozNo"
+                      checked={matchField === 'pozNo'}
+                      onChange={() => setMatchField('pozNo')}
+                      className="accent-primary"
+                    />
+                    Poz No
+                  </label>
+                </div>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Sıra No Sütunu</Label>
+                  <Label>
+                    {matchField === 'pozNo' ? 'Excel Poz No Sütunu' : 'Excel Sıra No Sütunu'}
+                  </Label>
                   <select
                     value={keyColumnIndex}
                     onChange={(e) => setKeyColumnIndex(Number(e.target.value))}
@@ -276,14 +309,14 @@ export function UploadPricesDialog({
                   >
                     {parsedExcel.headers.map((header, idx) => (
                       <option key={idx} value={idx}>
-                        {getColumnLetter(idx)}: {header || '(boş)'}
+                        {header || '(boş)'}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Birim Fiyat Sütunu</Label>
+                  <Label>Excel Birim Fiyat Sütunu</Label>
                   <select
                     value={priceColumnIndex}
                     onChange={(e) => setPriceColumnIndex(Number(e.target.value))}
@@ -291,7 +324,7 @@ export function UploadPricesDialog({
                   >
                     {parsedExcel.headers.map((header, idx) => (
                       <option key={idx} value={idx}>
-                        {getColumnLetter(idx)}: {header || '(boş)'}
+                        {header || '(boş)'}
                       </option>
                     ))}
                   </select>
@@ -306,7 +339,9 @@ export function UploadPricesDialog({
                     <thead className="bg-muted/50">
                       <tr>
                         <th className="border-b px-3 py-2 text-left font-medium">Satır</th>
-                        <th className="border-b px-3 py-2 text-left font-medium">Sıra No</th>
+                        <th className="border-b px-3 py-2 text-left font-medium">
+                          {matchField === 'pozNo' ? 'Poz No' : 'Sıra No'}
+                        </th>
                         <th className="border-b px-3 py-2 text-left font-medium">Birim Fiyat</th>
                       </tr>
                     </thead>
@@ -367,7 +402,7 @@ export function UploadPricesDialog({
               ) : (
                 <div className="max-h-64 overflow-auto rounded-lg border">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted/50 sticky top-0">
+                    <thead className="bg-muted sticky top-0">
                       <tr>
                         <th className="border-b px-3 py-2 text-left font-medium">#</th>
                         <th className="border-b px-3 py-2 text-left font-medium">Poz No</th>

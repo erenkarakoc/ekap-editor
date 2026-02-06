@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import Decimal from 'decimal.js';
 import type { EkapItem } from './ekap-crypto';
 
-export type MatchField = 'siraNo';
+export type MatchField = 'siraNo' | 'pozNo';
 
 export interface ExcelRow {
   rowIndex: number;
@@ -165,7 +165,7 @@ export function getColumnLetter(index: number): string {
 export function matchExcelToItems(
   excel: ParsedExcel,
   items: EkapItem[],
-  _matchField: MatchField,
+  matchField: MatchField,
   keyColumnIndex: number,
   priceColumnIndex: number,
 ): MatchResult {
@@ -174,10 +174,11 @@ export function matchExcelToItems(
   const invalidPriceRows: number[] = [];
   const duplicateKeyRows: number[] = [];
 
-  // Create a map for faster item lookup by siraNo
+  // Create a map for faster item lookup by the selected field
   const itemMap = new Map<string, EkapItem>();
   for (const item of items) {
-    const normalizedKey = normalizeKey(item.siraNo);
+    const keySource = matchField === 'pozNo' ? item.isKalemiNo : item.siraNo;
+    const normalizedKey = normalizeKey(keySource);
     if (!itemMap.has(normalizedKey)) {
       itemMap.set(normalizedKey, item);
     }
@@ -226,7 +227,7 @@ export function matchExcelToItems(
       aciklama: item.aciklama,
       currentPrice: item.fiyatDecimal,
       newPrice,
-      matchedBy: 'siraNo',
+      matchedBy: matchField,
       excelRowIndex: row.rowIndex + 1,
     });
   }

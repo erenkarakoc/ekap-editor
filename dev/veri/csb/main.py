@@ -98,12 +98,15 @@ CATEGORY_PATTERN = re.compile(r'.*Rayiçleri$')
 
 # POZ reference patterns - these indicate the POZ is being referenced, not defined
 # Examples: "10.110.1001 (02.002) poz nolu", "BFT 15.550.1202 pozundan"
-# POZ reference patterns - these indicate the POZ is being referenced, not defined
-# Examples: "10.110.1001 (02.002) poz nolu", "BFT 15.550.1202 pozundan"
-# Also handles Turkish locative suffix "'de" / "'da" (in/at) like "25.615.1300 'de belirtildiği gibi"
 # "ile aynı" means "same as" - indicates reference to another POZ
+# Note: Turkish locative suffixes ('de, 'da, 'den, 'dan) are handled separately in is_poz_reference()
+# to avoid false positives with words like "HP'den", "cm'den"
 POZ_REFERENCE_KEYWORDS = ['poz nolu', 'pozundan', 'pozuna', 'pozunu', 'poz no', 'pozların', 'pozundaki',
-                          "'de ", "'da ", "'den ", "'dan ", "'deki", "'daki", 'ile aynı']
+                          'ile aynı']
+
+# Turkish locative suffixes that indicate POZ reference when preceded by a space
+# These match patterns like "25.100.1000 'de belirtilen" but not "HP'den"
+POZ_LOCATIVE_PATTERN = re.compile(r"\s'(?:de|da|den|dan|deki|daki)\s", re.IGNORECASE)
 
 
 def is_garbage_line(line: str) -> bool:
@@ -149,9 +152,17 @@ def is_poz_reference(line: str, poz_end_pos: int) -> bool:
     - "10.110.1001 (02.002) poz nolu, ..." - reference with alt code
     - "BFT 15.550.1202 pozundan hesaplanacaktır" - reference in note
     - "Poz : 19.100.2493 (07.004) - Taşıma mesafeleri..." - reference with Poz: prefix
+
+    IMPORTANT: If the line ends with prices, it's a real entry, not a reference!
+    Example: "35.125.2401 ... Birim Fiyat No. 35.125.2100 ile aynı ... 526,10 232,81"
     """
     stripped = line.strip()
     after_poz = stripped[poz_end_pos:].strip().lower()
+
+    # FIRST: Check if line ends with prices - if so, it's NOT a reference
+    # Price pattern at end of line: number with comma decimal (Turkish format)
+    if re.search(r'\d+,\d{2}\s*$', stripped):
+        return False  # Has price at end, it's a real entry
 
     # Check if line starts with "Poz", "Poz.", "Poz:" etc. - these are references
     if re.match(r'^poz[\s.:]+', stripped, re.IGNORECASE):
@@ -165,6 +176,12 @@ def is_poz_reference(line: str, poz_end_pos: int) -> bool:
     for keyword in POZ_REFERENCE_KEYWORDS:
         if keyword in after_poz:
             return True
+
+    # Check for Turkish locative suffixes preceded by space (POZ references like "25.100.1000 'de belirtilen")
+    # This avoids false positives with words like "HP'den", "cm'den"
+    after_poz_original = stripped[poz_end_pos:].strip()
+    if POZ_LOCATIVE_PATTERN.search(after_poz_original):
+        return True
 
     # Check if POZ is preceded by "BFT" (Birim Fiyat Tarifleri reference)
     if re.search(r'BFT\s+\d{2}\.\d{2,3}\.\d{4}', stripped):
@@ -182,8 +199,18 @@ def is_section_header(line: str) -> bool:
     - "25.102.1000 LAVABO TESİSATI: (Ölçü: Tk.)"
     - "25.106.1000 ETAJERLER: (Ölçü: Ad.)"
     - "35.510.0000 ANA HAT TESİSATI: (TS-3930)"
+
+    IMPORTANT: If the line has prices at the end, it's NOT a section header!
+    Examples of real entries (not headers):
+    - "25.225.1502 Radyatör ayaklı konsolu: (TS 1107). 288,75 38,75"
+    - "35.135.1701 Multimetre:(TS IEC 61554'e uygun) 2.774,19 321,25"
     """
     stripped = line.strip()
+
+    # First, check if line ends with prices - if so, it's NOT a section header
+    # Price pattern at end of line: number with comma decimal (Turkish format)
+    if re.search(r'\d+,\d{2}\s*$', stripped):
+        return False  # Has price at end, not a section header
 
     # Check for "(Ölçü:" pattern - these are section headers
     if '(Ölçü:' in stripped or '(Ölçü :' in stripped:
@@ -200,7 +227,7 @@ def is_section_header(line: str) -> bool:
         return True
 
     # Check for pattern "Description: (TS..." - standard reference after colon
-    # These are section headers with standard codes
+    # These are section headers with standard codes (only if no price at end)
     if re.search(r':\s*\(TS', stripped):
         return True
 
