@@ -6,20 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-
-export interface RecentFile {
-  id: string; // path or unique identifier
-  name: string;
-  lastOpened: number; // timestamp
-  path?: string; // Optional if we have real paths, but for browser upload it might just be name + hash
-  size?: number;
-}
-
-export interface SessionSummary {
-  id: string;
-  fileName: string;
-  isDirty: boolean;
-}
+import type { RecentFile, SessionSummary } from '@/types/home';
 
 interface HomeViewProps {
   sessions: SessionSummary[]; // Typed interface instead of any

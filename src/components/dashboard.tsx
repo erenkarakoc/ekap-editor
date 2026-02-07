@@ -3,8 +3,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { FileText, Loader2, LockKeyhole, Plus, X, Home, Upload } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,25 +24,14 @@ import {
   createEkapZip,
 } from '@/lib/ekap-crypto';
 
-import { EditorView, SortConfig } from '@/components/editor-view';
-import { HomeView, RecentFile } from '@/components/home-view';
+import { EditorView } from '@/components/editor-view';
+import { HomeView } from '@/components/home-view';
 import { Header } from '@/components/header';
+import { useAuth } from '@/contexts/auth-context';
+import type { SortConfig, TabSession } from '@/types/editor';
+import type { RecentFile } from '@/types/home';
 
-interface TabSession {
-  id: string;
-  document: EkapDocument;
-  fileName: string;
-  isDirty: boolean;
-  password: string;
-  searchQuery: string;
-  sortConfig: SortConfig;
-}
-
-interface DashboardProps {
-  user: User;
-}
-
-export default function Dashboard({ user }: DashboardProps) {
+export default function Dashboard() {
   const [sessions, setSessions] = useState<TabSession[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
@@ -314,7 +301,6 @@ export default function Dashboard({ user }: DashboardProps) {
   return (
     <div className="bg-background selection:bg-primary/10 flex h-screen flex-col">
       <Header
-        user={user}
         variant="editor"
         onUpload={() => fileInputRef.current?.click()}
         onSave={handleSave}

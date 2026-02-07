@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const protectedRoutes = ['/editor', '/user'];
+const protectedRoutes = ['/', '/editor', '/user', '/yaklasik-maliyet'];
 const authRoutes = ['/login', '/register'];
 
 export async function updateSession(request: NextRequest) {
@@ -36,14 +36,18 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if the route is protected and user is not authenticated
-  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + '/'),
+  );
   if (isProtectedRoute && !user) {
     const redirectUrl = new URL('/login', request.url);
     return NextResponse.redirect(redirectUrl);
   }
 
   // Check if user is authenticated and trying to access auth routes
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+  const isAuthRoute = authRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + '/'),
+  );
   if (isAuthRoute && user) {
     const redirectUrl = new URL('/editor', request.url);
     return NextResponse.redirect(redirectUrl);

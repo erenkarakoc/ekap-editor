@@ -2,28 +2,16 @@
 
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/auth-context';
+import type { AccountType, UserMetadata } from '@/types/user';
 
-type AccountType = 'personal' | 'company';
-
-interface UserMetadata {
-  account_type?: AccountType;
-  first_name?: string;
-  last_name?: string;
-  company_name?: string;
-}
-
-interface UserSettingsFormProps {
-  user: User;
-}
-
-export function UserSettingsForm({ user }: UserSettingsFormProps) {
-  const metadata = (user.user_metadata || {}) as UserMetadata;
+export function UserSettingsForm() {
+  const { user, updateUser } = useAuth();
+  const metadata = (user?.user_metadata || {}) as UserMetadata;
 
   const [accountType, setAccountType] = useState<AccountType>(metadata.account_type || 'personal');
   const [firstName, setFirstName] = useState(metadata.first_name || '');
@@ -48,8 +36,7 @@ export function UserSettingsForm({ user }: UserSettingsFormProps) {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({
+      const result = await updateUser({
         data: {
           account_type: accountType,
           first_name: accountType === 'personal' ? firstName : null,
@@ -58,8 +45,8 @@ export function UserSettingsForm({ user }: UserSettingsFormProps) {
         },
       });
 
-      if (error) {
-        setMessage({ type: 'error', text: error.message });
+      if (result.error) {
+        setMessage({ type: 'error', text: result.error });
         return;
       }
 
@@ -88,13 +75,12 @@ export function UserSettingsForm({ user }: UserSettingsFormProps) {
     setIsPasswordLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({
+      const result = await updateUser({
         password: newPassword,
       });
 
-      if (error) {
-        setPasswordMessage({ type: 'error', text: error.message });
+      if (result.error) {
+        setPasswordMessage({ type: 'error', text: result.error });
         return;
       }
 
@@ -145,7 +131,13 @@ export function UserSettingsForm({ user }: UserSettingsFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="email">E-posta</Label>
-            <Input id="email" type="email" value={user.email || ''} disabled className="bg-muted" />
+            <Input
+              id="email"
+              type="email"
+              value={user?.email || ''}
+              disabled
+              className="bg-muted"
+            />
             <p className="text-muted-foreground text-xs">E-posta adresi değiştirilemez.</p>
           </div>
 

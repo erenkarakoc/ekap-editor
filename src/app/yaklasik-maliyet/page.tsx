@@ -1,23 +1,11 @@
-import { redirect } from 'next/navigation';
 import { Calculator } from 'lucide-react';
 
-import { createClient } from '@/lib/supabase/server';
 import { Header } from '@/components/header';
 
-export default async function YaklasikMaliyetPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    redirect('/login');
-  }
-
+export default function YaklasikMaliyetPage() {
   return (
     <div className="bg-background flex min-h-screen flex-col">
-      <Header user={user} />
+      <Header />
 
       <main className="flex flex-1 flex-col items-center justify-center p-6">
         <div className="text-center">

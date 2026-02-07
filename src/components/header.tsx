@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { FileText, LogOut, UserIcon, Upload, Save, Loader2 } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,10 +11,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ModeToggle } from '@/components/mode-toggle';
-import { signOut } from '@/lib/auth/actions';
+import { useAuth } from '@/contexts/auth-context';
 
 interface HeaderProps {
-  user?: User | null;
   children?: React.ReactNode;
   variant?: 'default' | 'editor';
   // Editor-specific props
@@ -26,7 +24,6 @@ interface HeaderProps {
 }
 
 export function Header({
-  user,
   children,
   variant = 'default',
   onUpload,
@@ -34,6 +31,8 @@ export function Header({
   canSave = false,
   isSaving = false,
 }: HeaderProps) {
+  const { user, signOut } = useAuth();
+
   return (
     <header className="bg-background/95 z-20 flex h-12 shrink-0 items-center justify-between overflow-hidden border-b px-2 backdrop-blur">
       {/* Left side */}
@@ -91,13 +90,9 @@ export function Header({
                   Profilim
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer p-0">
-                <form action={signOut} className="w-full">
-                  <button type="submit" className="flex w-full items-center px-2 py-1.5">
-                    <LogOut className="mr-2 size-4" />
-                    Çıkış Yap
-                  </button>
-                </form>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => signOut()}>
+                <LogOut className="mr-2 size-4" />
+                Çıkış Yap
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

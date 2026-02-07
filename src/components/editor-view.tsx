@@ -47,14 +47,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UploadPricesDialog } from '@/components/upload-prices-dialog';
 import type { PriceUpdate } from '@/lib/excel-parser';
+import type { SortKey, SortConfig } from '@/types/editor';
 import Decimal from 'decimal.js';
-
-type SortKey = keyof EkapItem | 'siraNoInt';
-
-export interface SortConfig {
-  key: SortKey;
-  direction: 'asc' | 'desc';
-}
 
 const COLUMN_LABELS: Record<string, string> = {
   siraNo: '#',

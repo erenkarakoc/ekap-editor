@@ -1,19 +1,7 @@
-import { redirect } from 'next/navigation';
-
-import { createClient } from '@/lib/supabase/server';
 import { RegisterForm } from '@/components/auth/register-form';
 import { Header } from '@/components/header';
 
-export default async function RegisterPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect('/editor');
-  }
-
+export default function RegisterPage() {
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <Header />
