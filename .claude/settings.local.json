@@ -20,7 +20,11 @@
       "Bash(npm run lint)",
       "Bash(npx tsc:*)",
       "Bash(npm ls:*)",
-      "Bash(npx next build:*)"
+      "Bash(npx next build:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''src\\\\shared\\\\components\\\\ui\\\\*.tsx'' | ForEach-Object { \\(Get-Content $_FullName\\) -replace \"\"from ''@/lib/utils''\"\", \"\"from ''@shared/lib/utils''\"\" | Set-Content $_FullName }\")",
+      "Bash(powershell:*)"
     ]
   }
 }
