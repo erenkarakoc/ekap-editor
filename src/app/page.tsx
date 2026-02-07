@@ -1,44 +1,63 @@
 import Link from 'next/link';
-import { FileText } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { FileText, Calculator } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/server';
-import { Button } from '@/components/ui/button';
 import { Header } from '@/components/header';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-export default async function LandingPage() {
+const features = [
+  {
+    title: 'EKAP Editör',
+    description: 'EKAP dosyalarını görüntüle ve düzenle',
+    href: '/editor',
+    icon: FileText,
+  },
+  {
+    title: 'Yaklaşık Maliyet',
+    description: 'Yaklaşık maliyet hesaplama',
+    href: '/yaklasik-maliyet',
+    icon: Calculator,
+  },
+];
+
+export default async function HomePage() {
   const supabase = await createClient();
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    redirect('/login');
+  }
 
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <Header user={user} />
 
-      <main className="flex flex-1 flex-col items-center justify-center p-4">
-        <div className="max-w-md text-center">
-          <div className="bg-primary text-primary-foreground mx-auto mb-6 flex size-20 items-center justify-center rounded-2xl">
-            <FileText className="size-10" />
-          </div>
-          <h1 className="mb-4 text-4xl font-bold">EKAP Editör</h1>
+      <main className="flex flex-1 flex-col items-center justify-center p-6">
+        <div className="w-full max-w-2xl">
+          <h1 className="mb-2 text-2xl font-bold">Hoş Geldiniz</h1>
           <p className="text-muted-foreground mb-8">
-            EKAP dosyalarınızı kolayca görüntüleyin ve düzenleyin.
+            Çalışmak istediğiniz aracı seçin.
           </p>
-          {!user && (
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Button size="lg" asChild>
-                <Link href="/register">Kayıt Ol</Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link href="/login">Giriş Yap</Link>
-              </Button>
-            </div>
-          )}
-          {user && (
-            <Button size="lg" asChild>
-              <Link href="/editor">Editöre Git</Link>
-            </Button>
-          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {features.map((feature) => (
+              <Link key={feature.href} href={feature.href} className="group">
+                <Card className="h-full transition-colors group-hover:border-primary/50 group-hover:shadow-md">
+                  <CardHeader>
+                    <div className="bg-primary text-primary-foreground mb-2 flex size-10 items-center justify-center rounded-lg">
+                      <feature.icon className="size-5" />
+                    </div>
+                    <CardTitle>{feature.title}</CardTitle>
+                    <CardDescription>{feature.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
         </div>
       </main>
 
