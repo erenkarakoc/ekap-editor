@@ -31,15 +31,7 @@ export function AppShell({ children }: AppShellProps) {
 
   // Global keyboard shortcuts
   const shortcuts = useMemo<KeyboardShortcut[]>(
-    () => [
-      { key: 'b', ctrl: true, handler: () => toggleSidebar() },
-      { key: '1', ctrl: true, handler: () => router.push(TOOLS[0].href) },
-      { key: '2', ctrl: true, handler: () => router.push(TOOLS[1].href) },
-      { key: '3', ctrl: true, handler: () => router.push(TOOLS[2].href) },
-      { key: '4', ctrl: true, handler: () => router.push(TOOLS[3].href) },
-      { key: '5', ctrl: true, handler: () => router.push(TOOLS[4].href) },
-      { key: '6', ctrl: true, handler: () => router.push(TOOLS[5].href) },
-    ],
+    () => [{ key: 'b', ctrl: true, handler: () => toggleSidebar() }],
     [toggleSidebar, router],
   );
 

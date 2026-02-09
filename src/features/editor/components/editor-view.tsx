@@ -25,6 +25,7 @@ import {
 import { SortableHead } from '@shared/components/sortable-head';
 import { measureTextWidth } from '@shared/lib/measure-text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/components/ui/tooltip';
+import { Kbd } from '@shared/components/ui/kbd';
 import { UploadPricesDialog } from '@features/editor/components/upload-prices-dialog';
 import type { PriceUpdate } from '@features/editor/lib/excel-parser';
 import type { SortKey, SortConfig } from '@features/editor/types';
@@ -598,9 +599,7 @@ export function EditorView({
               onChange={(e) => onSearchChange(e.target.value)}
             />
             <div className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1">
-              <kbd className="bg-muted text-muted-foreground inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100">
-                <span className="text-xs">Ctrl K</span>
-              </kbd>
+              <Kbd>Ctrl K</Kbd>
             </div>
           </div>
           <Tooltip>

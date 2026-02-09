@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { LogOut, UserIcon, Upload, Save, Loader2 } from 'lucide-react';
 
 import { Button } from '@shared/components/ui/button';
+import { Kbd } from '@shared/components/ui/kbd';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,9 +63,7 @@ export function Header({
               className="hidden h-8 cursor-pointer gap-2 sm:inline-flex"
             >
               <Upload className="size-4" />
-              <kbd className="bg-muted text-muted-foreground hidden h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 sm:inline-flex">
-                <span className="text-xs">Ctrl O</span>
-              </kbd>
+              <Kbd className="hidden sm:inline-flex">Ctrl O</Kbd>
             </Button>
             <Button
               variant="default"

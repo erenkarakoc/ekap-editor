@@ -13,6 +13,7 @@ import {
   PanelLeft,
 } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
+import { Kbd } from '@shared/components/ui/kbd';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/components/ui/tooltip';
 
 export interface SidebarTool {
@@ -24,35 +25,31 @@ export interface SidebarTool {
 }
 
 export const TOOLS: SidebarTool[] = [
-  { id: 'editor', label: 'EKAP Editör', href: '/editor', icon: FileText, shortcut: 'Ctrl+1' },
+  { id: 'editor', label: 'EKAP Editör', href: '/editor', icon: FileText },
   {
     id: 'cost-estimate',
     label: 'Yaklaşık Maliyet',
     href: '/yaklasik-maliyet',
     icon: Calculator,
-    shortcut: 'Ctrl+2',
   },
-  { id: 'threshold', label: 'Sınır Değer', href: '/sinir-deger', icon: Target, shortcut: 'Ctrl+3' },
+  { id: 'threshold', label: 'Sınır Değer', href: '/sinir-deger', icon: Target },
   {
     id: 'unit-price',
     label: 'Birim Fiyat',
     href: '/birim-fiyat',
     icon: Search,
-    shortcut: 'Ctrl+4',
   },
   {
     id: 'price-diff',
     label: 'Fiyat Farkı',
     href: '/fiyat-farki',
     icon: TrendingUp,
-    shortcut: 'Ctrl+5',
   },
   {
     id: 'percentage-cost',
     label: 'Maliyet Sihirbazı',
     href: '/maliyet-sihirbazi',
     icon: Percent,
-    shortcut: 'Ctrl+6',
   },
 ];
 
@@ -103,9 +100,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 <>
                   <span className="flex-1 truncate">{tool.label}</span>
                   {tool.shortcut && (
-                    <kbd className="text-sidebar-foreground/40 hidden font-mono text-[10px] lg:inline">
+                    <Kbd variant="ghost" className="text-sidebar-foreground/40 hidden lg:inline">
                       {tool.shortcut}
-                    </kbd>
+                    </Kbd>
                   )}
                 </>
               )}
@@ -142,7 +139,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             <>
               <PanelLeftClose className="size-4 shrink-0" />
               <span className="flex-1 truncate text-left">Daralt</span>
-              <kbd className="text-sidebar-foreground/40 font-mono text-[10px]">Ctrl+B</kbd>
+              <Kbd variant="ghost" className="text-sidebar-foreground/40">
+                Ctrl+B
+              </Kbd>
             </>
           )}
         </button>

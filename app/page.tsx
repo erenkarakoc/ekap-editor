@@ -10,6 +10,7 @@ import {
   Percent,
   ArrowRight,
 } from 'lucide-react';
+import { Kbd } from '@shared/components/ui/kbd';
 
 const features = [
   {
@@ -17,42 +18,36 @@ const features = [
     description: 'EKAP dosyalarını görüntüle ve düzenle',
     href: '/editor',
     icon: FileText,
-    shortcut: 'Ctrl+1',
   },
   {
     title: 'Yaklaşık Maliyet',
     description: 'Yaklaşık maliyet hesaplama',
     href: '/yaklasik-maliyet',
     icon: Calculator,
-    shortcut: 'Ctrl+2',
   },
   {
     title: 'Sınır Değer',
     description: 'Aşırı düşük teklif sınır değer hesaplama',
     href: '/sinir-deger',
     icon: Target,
-    shortcut: 'Ctrl+3',
   },
   {
     title: 'Birim Fiyat',
     description: 'Birim fiyat analizi görüntüle',
     href: '/birim-fiyat',
     icon: Search,
-    shortcut: 'Ctrl+4',
   },
   {
     title: 'Fiyat Farkı',
     description: 'Fiyat farkı hesaplama',
     href: '/fiyat-farki',
     icon: TrendingUp,
-    shortcut: 'Ctrl+5',
   },
   {
     title: 'Maliyet Sihirbazı',
     description: 'Pursantajdan yaklaşık maliyet hesaplama',
     href: '/maliyet-sihirbazi',
     icon: Percent,
-    shortcut: 'Ctrl+6',
   },
 ];
 
@@ -79,9 +74,9 @@ export default function HomePage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{feature.title}</span>
-                    <kbd className="text-muted-foreground bg-muted hidden rounded px-1 font-mono text-[10px] sm:inline">
-                      {feature.shortcut}
-                    </kbd>
+                    {feature.shortcut && (
+                      <Kbd className="hidden sm:inline-flex">{feature.shortcut}</Kbd>
+                    )}
                   </div>
                   <p className="text-muted-foreground truncate text-xs">{feature.description}</p>
                 </div>

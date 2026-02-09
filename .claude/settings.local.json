@@ -26,7 +26,11 @@
       "Bash(powershell -Command \"Get-ChildItem -Path ''src\\\\shared\\\\components\\\\ui\\\\*.tsx'' | ForEach-Object { \\(Get-Content $_FullName\\) -replace \"\"from ''@/lib/utils''\"\", \"\"from ''@shared/lib/utils''\"\" | Set-Content $_FullName }\")",
       "Bash(powershell:*)",
       "Bash(PGPASSWORD='258623*sDf' \"C:/Program Files/PostgreSQL/15/bin/psql.exe\":*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(npx:*)",
+      "Bash(\"C:/Users/er-o2/Desktop/ekap-editor/desktop/node_modules/app-builder-bin/win/x64/app-builder.exe\" download-artifact --name winCodeSign --url \"https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z\")",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

@@ -10,12 +10,12 @@ import '../public/assets/css/globals.css';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export default async function RootLayout({
 
   return (
     <html lang="tr" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

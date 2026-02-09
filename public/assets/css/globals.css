@@ -185,7 +185,14 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground subpixel-antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  @media (min-resolution: 2dppx) {
+    body {
+      @apply antialiased;
+    }
   }
 
   /* Custom scrollbar - Vercel style */
