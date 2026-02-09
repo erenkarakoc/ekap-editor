@@ -1,21 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
-import {
-  Search,
-  Info,
-  Settings2,
-  FileSpreadsheet,
-} from 'lucide-react';
+import { Search, Info, Settings2, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Separator } from '@shared/components/ui/separator';
-import {
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from '@shared/components/ui/table';
+import { TableBody, TableCell, TableHeader, TableRow } from '@shared/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@shared/components/ui/dialog';
 import {
   DropdownMenu,
@@ -1091,4 +1081,3 @@ export function EditorView({
     </div>
   );
 }
-

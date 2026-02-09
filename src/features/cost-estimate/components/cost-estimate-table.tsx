@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useCallback } from 'react';
+import Decimal from 'decimal.js';
 import { Trash2 } from 'lucide-react';
+import { TableBody, TableCell, TableHeader, TableRow } from '@shared/components/ui/table';
 import {
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from '@shared/components/ui/table';
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@shared/components/ui/tooltip';
 import { Input } from '@shared/components/ui/input';
 import { SortableHead } from '@shared/components/sortable-head';
 import { formatTurkishNumber, parseTurkishNumber } from '@shared/lib/turkish-number';
@@ -22,6 +24,7 @@ const COLUMN_LABELS: Record<CostSortKey, string> = {
   quantity: 'Miktar',
   unitPrice: 'Birim Fiyat',
   total: 'Toplam',
+  percentage: 'Pursantaj',
 };
 
 const VISIBLE_COLUMNS: CostSortKey[] = [
@@ -32,10 +35,12 @@ const VISIBLE_COLUMNS: CostSortKey[] = [
   'quantity',
   'unitPrice',
   'total',
+  'percentage',
 ];
 
 interface CostEstimateTableProps {
   rows: CostRow[];
+  grandTotal: Decimal;
   sortConfig: { key: CostSortKey | null; direction: 'asc' | 'desc' | null };
   columnWidths: Record<string, number>;
   onSort: (key: CostSortKey) => void;
@@ -51,6 +56,7 @@ interface CostEstimateTableProps {
 
 export function CostEstimateTable({
   rows,
+  grandTotal,
   sortConfig,
   columnWidths,
   onSort,
@@ -63,10 +69,7 @@ export function CostEstimateTable({
   onPozSelect,
   focusedRowId,
 }: CostEstimateTableProps) {
-  const totalTableWidth = VISIBLE_COLUMNS.reduce(
-    (sum, key) => sum + (columnWidths[key] || 0),
-    0,
-  );
+  const totalTableWidth = VISIBLE_COLUMNS.reduce((sum, key) => sum + (columnWidths[key] || 0), 0);
 
   const handleQuantityChange = useCallback(
     (id: string, value: string) => {
@@ -90,7 +93,17 @@ export function CostEstimateTable({
     const isControl =
       e.ctrlKey ||
       e.metaKey ||
-      ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'ArrowDown', 'ArrowUp'].includes(e.key);
+      [
+        'Backspace',
+        'Delete',
+        'Tab',
+        'ArrowLeft',
+        'ArrowRight',
+        'Home',
+        'End',
+        'ArrowDown',
+        'ArrowUp',
+      ].includes(e.key);
     if (isControl) return;
     if (/^[0-9]$/.test(e.key)) return;
     if (e.key === '.' || e.key === ',') {
@@ -129,7 +142,10 @@ export function CostEstimateTable({
               className={
                 key === 'rowNumber'
                   ? 'text-center'
-                  : key === 'quantity' || key === 'unitPrice' || key === 'total'
+                  : key === 'quantity' ||
+                      key === 'unitPrice' ||
+                      key === 'total' ||
+                      key === 'percentage'
                     ? 'text-right'
                     : ''
               }
@@ -201,16 +217,37 @@ export function CostEstimateTable({
 
             {/* Toplam */}
             <TableCell className="border-border overflow-hidden border-r border-b py-1 pr-2 text-right font-mono text-sm font-medium">
-              <div className="flex items-center justify-end gap-1">
-                <span>{row.total.isZero() ? '' : formatTurkishNumber(row.total)}</span>
-                <button
-                  className="text-muted-foreground hover:text-destructive ml-1 opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={() => onDeleteRow(row.id)}
-                  title="Satırı sil"
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
-              </div>
+              {row.total.isZero() ? '' : formatTurkishNumber(row.total)}
+            </TableCell>
+
+            {/* Percentage */}
+            <TableCell className="border-border overflow-hidden border-r border-b py-1 pr-2 text-right font-mono text-sm font-medium">
+              {(() => {
+                const pct = grandTotal.isZero()
+                  ? new Decimal(0)
+                  : row.total.div(grandTotal).times(100);
+                return (
+                  <div className="flex items-center justify-end gap-1">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-default">{formatTurkishNumber(pct, 2)}%</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <span className="font-mono">{formatTurkishNumber(pct, 8)}%</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <button
+                      className="text-muted-foreground hover:text-destructive ml-1 opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={() => onDeleteRow(row.id)}
+                      title="Satırı sil"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                );
+              })()}
             </TableCell>
           </TableRow>
         ))}

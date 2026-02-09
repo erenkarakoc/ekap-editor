@@ -32,7 +32,7 @@ const INDEX_LABELS = [
 interface FormState {
   anStr: string;
   coefficients: string[]; // a, b1, b2, b3, b4, b5, c
-  baseIndices: string[];  // Io, Ço, Do, AYo, Yo, Ko, Mo
+  baseIndices: string[]; // Io, Ço, Do, AYo, Yo, Ko, Mo
   currentIndices: string[];
 }
 
@@ -113,8 +113,10 @@ export function PriceDiffView() {
     );
   }, [form]);
 
-  const coeffSum = form.coefficients
-    .reduce((s, c) => s.plus(parseTurkishNumber(c)), new Decimal(0));
+  const coeffSum = form.coefficients.reduce(
+    (s, c) => s.plus(parseTurkishNumber(c)),
+    new Decimal(0),
+  );
 
   return (
     <div className="flex-1 overflow-auto p-4 md:p-6">
@@ -211,9 +213,7 @@ export function PriceDiffView() {
           </CardContent>
         </Card>
 
-        {error && (
-          <p className="text-center text-sm text-red-600 dark:text-red-400">{error}</p>
-        )}
+        {error && <p className="text-center text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         {/* Calculate Button */}
         <div className="flex justify-center">
@@ -228,11 +228,9 @@ export function PriceDiffView() {
             <Card className={result.f.gte(0) ? 'border-green-500/50' : 'border-red-500/50'}>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-muted-foreground mb-1 text-sm">
-                    Fiyat Farkı (F)
-                  </p>
+                  <p className="text-muted-foreground mb-1 text-sm">Fiyat Farkı (F)</p>
                   <p
-                    className={`text-3xl font-bold font-mono ${
+                    className={`font-mono text-3xl font-bold ${
                       result.f.gte(0)
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-red-600 dark:text-red-400'
@@ -242,7 +240,9 @@ export function PriceDiffView() {
                     {formatTurkishNumber(result.f)} TL
                   </p>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    {result.f.gte(0) ? 'Yükleniciye ödeme yapılacak' : 'Yükleniciden kesinti yapılacak'}
+                    {result.f.gte(0)
+                      ? 'Yükleniciye ödeme yapılacak'
+                      : 'Yükleniciden kesinti yapılacak'}
                   </p>
                 </div>
               </CardContent>
@@ -266,7 +266,7 @@ export function PriceDiffView() {
                     <span className="text-muted-foreground">Pn - 1</span>
                     <span className="font-mono">{result.pn.minus(1).toFixed(6)}</span>
                   </div>
-                  <div className="border-t pt-2 flex justify-between font-medium">
+                  <div className="flex justify-between border-t pt-2 font-medium">
                     <span>F = An × B × (Pn - 1)</span>
                     <span className="font-mono">{formatTurkishNumber(result.f)} TL</span>
                   </div>

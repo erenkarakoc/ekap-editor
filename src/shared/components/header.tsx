@@ -40,7 +40,10 @@ export function Header({
       {/* Left side */}
       <div className="flex h-full items-center overflow-hidden">
         {title && (
-          <Link href="/" className="text-foreground flex h-8 shrink-0 items-center px-2 text-sm font-semibold">
+          <Link
+            href="/"
+            className="text-foreground flex h-8 shrink-0 items-center px-2 text-sm font-semibold"
+          >
             {title}
           </Link>
         )}

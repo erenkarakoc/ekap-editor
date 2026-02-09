@@ -1,7 +1,6 @@
 'use client';
 
 import { Plus, Trash2 } from 'lucide-react';
-import Decimal from 'decimal.js';
 
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -41,10 +40,7 @@ const statusLabels: Record<string, string> = {
 
 export function BidTable({ bids, results, onChange }: BidTableProps) {
   const addBid = () => {
-    onChange([
-      ...bids,
-      { id: crypto.randomUUID(), name: '', amountStr: '' },
-    ]);
+    onChange([...bids, { id: crypto.randomUUID(), name: '', amountStr: '' }]);
   };
 
   const removeBid = (id: string) => {
@@ -72,6 +68,7 @@ export function BidTable({ bids, results, onChange }: BidTableProps) {
               <TableHead className="w-10">#</TableHead>
               <TableHead>İstekli Adı</TableHead>
               <TableHead className="w-48">Teklif Tutarı (TL)</TableHead>
+              {results && <TableHead className="w-24">Tenzilat</TableHead>}
               {results && <TableHead className="w-32">Durum</TableHead>}
               <TableHead className="w-10" />
             </TableRow>
@@ -79,7 +76,10 @@ export function BidTable({ bids, results, onChange }: BidTableProps) {
           <TableBody>
             {bids.length === 0 && (
               <TableRow>
-                <TableCell colSpan={results ? 5 : 4} className="text-muted-foreground h-20 text-center">
+                <TableCell
+                  colSpan={results ? 6 : 4}
+                  className="text-muted-foreground h-20 text-center"
+                >
                   Teklif eklemek için yukarıdaki butonu kullanın.
                 </TableCell>
               </TableRow>
@@ -89,9 +89,7 @@ export function BidTable({ bids, results, onChange }: BidTableProps) {
               const rowClass = result ? statusColors[result.status] : '';
               return (
                 <TableRow key={bid.id} className={rowClass}>
-                  <TableCell className="text-muted-foreground font-mono text-xs">
-                    {i + 1}
-                  </TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs">{i + 1}</TableCell>
                   <TableCell>
                     <Input
                       placeholder="İstekli adı"
@@ -108,6 +106,11 @@ export function BidTable({ bids, results, onChange }: BidTableProps) {
                       className="h-8 font-mono"
                     />
                   </TableCell>
+                  {results && (
+                    <TableCell className="font-mono text-sm">
+                      {result && `%${result.tenzilat.toFixed(2).replace('.', ',')}`}
+                    </TableCell>
+                  )}
                   {results && (
                     <TableCell>
                       {result && (

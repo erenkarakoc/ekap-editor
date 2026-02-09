@@ -1,8 +1,15 @@
-import Link from 'next/link';
-import { FileText, Calculator, Target, Search, TrendingUp } from 'lucide-react';
+'use client';
 
-import { Header } from '@shared/components/header';
-import { Card, CardHeader, CardTitle, CardDescription } from '@shared/components/ui/card';
+import Link from 'next/link';
+import {
+  FileText,
+  Calculator,
+  Target,
+  Search,
+  TrendingUp,
+  Percent,
+  ArrowRight,
+} from 'lucide-react';
 
 const features = [
   {
@@ -10,66 +17,80 @@ const features = [
     description: 'EKAP dosyalarını görüntüle ve düzenle',
     href: '/editor',
     icon: FileText,
+    shortcut: 'Ctrl+1',
   },
   {
     title: 'Yaklaşık Maliyet',
     description: 'Yaklaşık maliyet hesaplama',
     href: '/yaklasik-maliyet',
     icon: Calculator,
+    shortcut: 'Ctrl+2',
   },
   {
     title: 'Sınır Değer',
     description: 'Aşırı düşük teklif sınır değer hesaplama',
     href: '/sinir-deger',
     icon: Target,
+    shortcut: 'Ctrl+3',
   },
   {
     title: 'Birim Fiyat',
     description: 'Birim fiyat analizi görüntüle',
     href: '/birim-fiyat',
     icon: Search,
+    shortcut: 'Ctrl+4',
   },
   {
     title: 'Fiyat Farkı',
     description: 'Fiyat farkı hesaplama',
     href: '/fiyat-farki',
     icon: TrendingUp,
+    shortcut: 'Ctrl+5',
+  },
+  {
+    title: 'Maliyet Sihirbazı',
+    description: 'Pursantajdan yaklaşık maliyet hesaplama',
+    href: '/maliyet-sihirbazi',
+    icon: Percent,
+    shortcut: 'Ctrl+6',
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="bg-background flex min-h-screen flex-col">
-      <Header />
+    <div className="flex flex-1 flex-col overflow-auto">
+      <div className="flex flex-1 flex-col items-center justify-center p-6">
+        <div className="w-full max-w-2xl">
+          <h1 className="mb-1 text-xl font-bold">Hoş Geldiniz</h1>
+          <p className="text-muted-foreground mb-6 text-sm">
+            Bir araç seçin veya klavye kısayollarını kullanın.
+          </p>
 
-      <main className="flex flex-1 flex-col items-center justify-center p-6">
-        <div className="w-full max-w-4xl">
-          <h1 className="mb-2 text-2xl font-bold">Hoş Geldiniz</h1>
-          <p className="text-muted-foreground mb-8">Çalışmak istediğiniz aracı seçin.</p>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2">
             {features.map((feature) => (
-              <Link key={feature.href} href={feature.href} className="group">
-                <Card className="group-hover:border-primary/50 h-full transition-colors group-hover:shadow-md">
-                  <CardHeader>
-                    <div className="bg-primary text-primary-foreground mb-2 flex size-10 items-center justify-center rounded-lg">
-                      <feature.icon className="size-5" />
-                    </div>
-                    <CardTitle>{feature.title}</CardTitle>
-                    <CardDescription>{feature.description}</CardDescription>
-                  </CardHeader>
-                </Card>
+              <Link
+                key={feature.href}
+                href={feature.href}
+                className="hover:bg-muted/50 group flex items-center gap-3 rounded-md border p-3 transition-colors"
+              >
+                <div className="bg-muted text-foreground flex size-8 shrink-0 items-center justify-center rounded-md">
+                  <feature.icon className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{feature.title}</span>
+                    <kbd className="text-muted-foreground bg-muted hidden rounded px-1 font-mono text-[10px] sm:inline">
+                      {feature.shortcut}
+                    </kbd>
+                  </div>
+                  <p className="text-muted-foreground truncate text-xs">{feature.description}</p>
+                </div>
+                <ArrowRight className="text-muted-foreground size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
               </Link>
             ))}
           </div>
         </div>
-      </main>
-
-      <footer className="border-t py-4 text-center">
-        <p className="text-muted-foreground text-sm">
-          &copy; {new Date().getFullYear()} EKAP Editör
-        </p>
-      </footer>
+      </div>
     </div>
   );
 }

@@ -24,7 +24,9 @@
       "Bash(git mv:*)",
       "Bash(git rm:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path ''src\\\\shared\\\\components\\\\ui\\\\*.tsx'' | ForEach-Object { \\(Get-Content $_FullName\\) -replace \"\"from ''@/lib/utils''\"\", \"\"from ''@shared/lib/utils''\"\" | Set-Content $_FullName }\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(PGPASSWORD='258623*sDf' \"C:/Program Files/PostgreSQL/15/bin/psql.exe\":*)",
+      "Bash(python:*)"
     ]
   }
 }

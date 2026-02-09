@@ -1,0 +1,31 @@
+appId: com.ekap.editor
+productName: EKAP Editör
+copyright: Copyright © 2026 EKAP
+
+directories:
+  output: release
+
+files:
+  - dist/**/*
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: ../public/favicon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  category: public.app-category.productivity
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Office

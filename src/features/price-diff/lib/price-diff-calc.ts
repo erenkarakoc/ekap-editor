@@ -1,28 +1,28 @@
 import Decimal from 'decimal.js';
 
 export interface IndexPair {
-  base: Decimal;    // Io, Ço, Do, etc. (temel endeks)
+  base: Decimal; // Io, Ço, Do, etc. (temel endeks)
   current: Decimal; // In, Çn, Dn, etc. (güncel endeks)
 }
 
 export interface PriceDiffInput {
-  an: Decimal;             // hakediş tutarı
+  an: Decimal; // hakediş tutarı
   coefficients: {
-    a: Decimal;            // işçilik
-    b: Decimal[];          // b1-b5 malzeme grupları
-    c: Decimal;            // makine amortismanı
+    a: Decimal; // işçilik
+    b: Decimal[]; // b1-b5 malzeme grupları
+    c: Decimal; // makine amortismanı
   };
   indices: {
-    labor: IndexPair;      // a → işçilik
-    materials: IndexPair[];// b1-b5 → malzeme grupları
-    machinery: IndexPair;  // c → makine
+    labor: IndexPair; // a → işçilik
+    materials: IndexPair[]; // b1-b5 → malzeme grupları
+    machinery: IndexPair; // c → makine
   };
 }
 
 export interface PriceDiffResult {
   pn: Decimal;
-  f: Decimal;   // pozitif = ödeme, negatif = kesinti
-  b: Decimal;   // 0.90 sabit
+  f: Decimal; // pozitif = ödeme, negatif = kesinti
+  b: Decimal; // 0.90 sabit
 }
 
 const B = new Decimal('0.90');

@@ -50,10 +50,7 @@ export function guessColumnMapping(headers: string[]): ExcelImportMapping {
   };
 }
 
-export function importExcelRows(
-  excel: ParsedExcel,
-  mapping: ExcelImportMapping,
-): ImportResult {
+export function importExcelRows(excel: ParsedExcel, mapping: ExcelImportMapping): ImportResult {
   const rows: ImportedRow[] = [];
   const skippedRows: number[] = [];
 

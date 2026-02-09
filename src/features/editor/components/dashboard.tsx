@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
-import { FileText, Loader2, LockKeyhole, Plus, X, Home, Upload } from 'lucide-react';
+import { FileText, Loader2, LockKeyhole, Plus, X, Home, Upload, Save } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
@@ -26,8 +26,6 @@ import {
 
 import { EditorView } from '@features/editor/components/editor-view';
 import { HomeView } from '@features/editor/components/home-view';
-import { Header } from '@shared/components/header';
-import { useAuth } from '@features/auth/context';
 import type { SortConfig, TabSession } from '@features/editor/types';
 import type { RecentFile } from '@features/editor/types';
 
@@ -299,33 +297,28 @@ export default function Dashboard() {
   }, [handleSave]);
 
   return (
-    <div className="bg-background selection:bg-primary/10 flex h-screen flex-col">
-      <Header
-        title="EKAP Editör"
-        variant="editor"
-        onUpload={() => fileInputRef.current?.click()}
-        onSave={handleSave}
-        canSave={!!activeSession}
-        isSaving={isLoading}
-      >
-        <div className="flex items-center gap-2">
+    <div className="bg-background selection:bg-primary/10 flex h-full flex-col">
+      {/* Tab Bar (replaces the old Header) */}
+      <div className="bg-background/95 flex h-9 shrink-0 items-center border-b px-1 backdrop-blur">
+        {/* Left: Home + Tabs */}
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
           <Button
             variant={activeTabId === null ? 'secondary' : 'ghost'}
-            size="icon-sm"
-            className="ml-2 size-8 shrink-0"
+            size="icon"
+            className="size-7 shrink-0"
             onClick={() => setActiveTabId(null)}
             title="Ana Sayfa"
           >
-            <Home className="size-4" />
+            <Home className="size-3.5" />
           </Button>
 
-          <Separator orientation="vertical" className="h-8" />
+          <Separator orientation="vertical" className="h-5" />
 
           {/* Tabs List - Scrollable */}
           {sessions.length > 0 && (
             <div className="relative flex flex-1 items-center overflow-hidden">
               <div
-                className="no-scrollbar flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden px-[10px]"
+                className="no-scrollbar flex h-full items-center gap-0.5 overflow-x-auto overflow-y-hidden px-[10px]"
                 style={{
                   maskImage:
                     'linear-gradient(to right, transparent, black 10px, black calc(100% - 10px), transparent)',
@@ -343,7 +336,7 @@ export default function Dashboard() {
                       }
                     }}
                     className={cn(
-                      'group relative flex h-[34px] max-w-[160px] min-w-[100px] shrink-0 cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all select-none',
+                      'group relative flex h-7 max-w-[160px] min-w-[100px] shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-all select-none',
                       activeTabId === session.id
                         ? 'bg-muted border-border text-foreground z-10'
                         : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-transparent bg-transparent',
@@ -369,16 +362,42 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* New Tab Button */}
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="text-muted-foreground mx-1 size-8 shrink-0 cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Plus className="size-4" />
-        </Button>
-      </Header>
+        {/* Right: New Tab + Save + Upload */}
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground size-7 shrink-0 cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            title="Dosya Aç (Ctrl+O)"
+          >
+            <Plus className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground size-7 shrink-0 cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            title="Dosya Yükle (Ctrl+O)"
+          >
+            <Upload className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7 shrink-0 cursor-pointer"
+            disabled={!activeSession || isLoading}
+            onClick={handleSave}
+            title="Kaydet (Ctrl+S)"
+          >
+            {isLoading ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Save className="size-3.5" />
+            )}
+          </Button>
+        </div>
+      </div>
 
       {/* --- Main Content --- */}
       <main className="relative flex flex-1 flex-col overflow-hidden">

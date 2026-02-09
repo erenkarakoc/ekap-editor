@@ -32,6 +32,7 @@ export function CostEstimateView() {
     quantity: 120,
     unitPrice: 140,
     total: 140,
+    percentage: 100,
   });
 
   // Adjust description column to fill container
@@ -99,12 +100,9 @@ export function CostEstimateView() {
     }));
   }, []);
 
-  const handleSortExplicit = useCallback(
-    (key: CostSortKey, direction: 'asc' | 'desc') => {
-      setSortConfig({ key, direction });
-    },
-    [],
-  );
+  const handleSortExplicit = useCallback((key: CostSortKey, direction: 'asc' | 'desc') => {
+    setSortConfig({ key, direction });
+  }, []);
 
   const handleColumnResize = useCallback((key: string, width: number) => {
     setColumnWidths((prev) => ({ ...prev, [key]: Math.max(40, width) }));
@@ -147,8 +145,10 @@ export function CostEstimateView() {
       const mul = direction === 'asc' ? 1 : -1;
       result = [...result].sort((a, b) => {
         if (key === 'rowNumber') return (a.rowNumber - b.rowNumber) * mul;
-        if (key === 'quantity' || key === 'unitPrice' || key === 'total') {
-          return a[key].minus(b[key]).toNumber() * mul;
+        if (key === 'quantity' || key === 'unitPrice' || key === 'total' || key === 'percentage') {
+          const aVal = key === 'percentage' ? a.total : a[key];
+          const bVal = key === 'percentage' ? b.total : b[key];
+          return aVal.minus(bVal).toNumber() * mul;
         }
         return String(a[key]).localeCompare(String(b[key]), 'tr') * mul;
       });
@@ -175,7 +175,12 @@ export function CostEstimateView() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-9 gap-2" onClick={() => setUploadDialogOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2"
+            onClick={() => setUploadDialogOpen(true)}
+          >
             <FileSpreadsheet className="size-4" />
             <span>Poz Yükle</span>
           </Button>
@@ -190,6 +195,7 @@ export function CostEstimateView() {
       <div ref={tableContainerRef} className="flex-1 overflow-auto">
         <CostEstimateTable
           rows={filteredAndSortedRows}
+          grandTotal={grandTotal}
           sortConfig={sortConfig}
           columnWidths={columnWidths}
           onSort={handleSort}
@@ -206,9 +212,7 @@ export function CostEstimateView() {
 
       {/* Status Bar */}
       <div className="bg-muted/40 flex shrink-0 items-center justify-between border-t px-4 py-2 text-sm">
-        <span className="text-muted-foreground">
-          {rows.length} satır
-        </span>
+        <span className="text-muted-foreground">{rows.length} satır</span>
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">Genel Toplam:</span>
           <span className="text-foreground font-mono text-lg font-bold">

@@ -144,7 +144,7 @@ export function PozSearchCell({ value, onChange, onSelect, autoFocus }: PozSearc
         >
           {Object.entries(grouped).map(([institution, entries]) => (
             <div key={institution}>
-              <div className="text-muted-foreground sticky top-0 bg-muted/80 px-3 py-1.5 text-xs font-semibold backdrop-blur">
+              <div className="text-muted-foreground bg-muted/80 sticky top-0 px-3 py-1.5 text-xs font-semibold backdrop-blur">
                 {institution}
               </div>
               {entries.map((entry) => {
@@ -174,9 +174,7 @@ export function PozSearchCell({ value, onChange, onSelect, autoFocus }: PozSearc
                         {entry.description}
                       </div>
                     </div>
-                    <span className="text-muted-foreground shrink-0 text-xs">
-                      {entry.unit}
-                    </span>
+                    <span className="text-muted-foreground shrink-0 text-xs">{entry.unit}</span>
                   </div>
                 );
               })}

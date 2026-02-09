@@ -13,16 +13,9 @@ import type { ThresholdResult, Bid } from '../lib/threshold-calc';
 import { BidTable } from './bid-table';
 import type { BidRow } from './bid-table';
 
-const N_OPTIONS = [
-  { label: 'Üst Yapı (N = 1,00)', value: '1.00' },
-  { label: 'Alt Yapı (N = 1,20)', value: '1.20' },
-  { label: 'Özel', value: 'custom' },
-];
-
 export function ThresholdView() {
   const [ymStr, setYmStr] = useState('');
-  const [nOption, setNOption] = useState('1.00');
-  const [nCustomStr, setNCustomStr] = useState('1.00');
+  const [nStr, setNStr] = useState('1,00');
   const [bids, setBids] = useState<BidRow[]>([
     { id: crypto.randomUUID(), name: '', amountStr: '' },
     { id: crypto.randomUUID(), name: '', amountStr: '' },
@@ -34,9 +27,7 @@ export function ThresholdView() {
     const ym = parseTurkishNumber(ymStr);
     if (ym.isZero()) return;
 
-    const n = nOption === 'custom'
-      ? parseTurkishNumber(nCustomStr)
-      : new Decimal(nOption);
+    const n = parseTurkishNumber(nStr);
 
     const validBids: Bid[] = bids
       .filter((b) => b.amountStr.trim() !== '')
@@ -48,7 +39,7 @@ export function ThresholdView() {
     if (validBids.length === 0) return;
 
     setResult(calculateThreshold(ym, n, validBids));
-  }, [ymStr, nOption, nCustomStr, bids]);
+  }, [ymStr, nStr, bids]);
 
   return (
     <div className="flex-1 overflow-auto p-4 md:p-6">
@@ -71,28 +62,14 @@ export function ThresholdView() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>N Katsayısı</Label>
-                <div className="flex gap-2">
-                  <select
-                    className="border-input bg-background ring-offset-background flex h-9 flex-1 rounded-md border px-3 text-sm"
-                    value={nOption}
-                    onChange={(e) => setNOption(e.target.value)}
-                  >
-                    {N_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  {nOption === 'custom' && (
-                    <Input
-                      placeholder="1,00"
-                      value={nCustomStr}
-                      onChange={(e) => setNCustomStr(e.target.value)}
-                      className="w-24 font-mono"
-                    />
-                  )}
-                </div>
+                <Label htmlFor="n">N Katsayısı</Label>
+                <Input
+                  id="n"
+                  placeholder="1,00"
+                  value={nStr}
+                  onChange={(e) => setNStr(e.target.value.replace('.', ','))}
+                  className="font-mono"
+                />
               </div>
             </div>
           </CardContent>
@@ -101,11 +78,7 @@ export function ThresholdView() {
         {/* Bid Table */}
         <Card>
           <CardContent className="pt-6">
-            <BidTable
-              bids={bids}
-              results={result?.bids ?? null}
-              onChange={setBids}
-            />
+            <BidTable bids={bids} results={result?.bids ?? null} onChange={setBids} />
           </CardContent>
         </Card>
 
@@ -119,13 +92,17 @@ export function ThresholdView() {
         {/* Result Section */}
         {result && (
           <>
-            {/* Threshold Value */}
+            {/* Threshold Value + Winner */}
             <Card className="border-primary/50">
               <CardContent className="pt-6">
-                <div className="text-center">
+                <div className="space-y-2 text-center">
                   <p className="text-muted-foreground mb-1 text-sm">Sınır Değer</p>
-                  <p className="text-primary text-3xl font-bold font-mono">
+                  <p className="text-primary font-mono text-3xl font-bold">
                     {formatTurkishNumber(result.thresholdValue)} TL
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Muhtemel Kazanan: </span>
+                    <span className="font-semibold">{result.winner ?? '—'}</span>
                   </p>
                 </div>
               </CardContent>
@@ -138,51 +115,65 @@ export function ThresholdView() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm">
+                  <StepRow label="Katsayı: N" value={result.steps.n.toFixed(2)} />
                   <StepRow
-                    label="Geçerli aralık"
-                    value={`${formatTurkishNumber(result.steps.lowerBound)} — ${formatTurkishNumber(result.steps.upperBound)} TL`}
-                    desc="YM×%40 — YM×%120"
+                    label="Alt Sınır"
+                    value={`${formatTurkishNumber(result.steps.lowerBound)} TL`}
+                    desc="YM × %40"
+                  />
+                  <StepRow
+                    label="Üst Sınır"
+                    value={`${formatTurkishNumber(result.steps.upperBound)} TL`}
+                    desc="YM × %120"
                   />
                   <StepRow
                     label="Aralıktaki teklif sayısı"
                     value={`${result.steps.validBids.length}`}
                   />
                   <StepRow
-                    label="Tort1 (aritmetik ortalama)"
+                    label="Ortalama-1"
                     value={`${formatTurkishNumber(result.steps.tort1)} TL`}
+                    desc="Tort1"
                   />
                   <StepRow
-                    label="Standart sapma (σ)"
+                    label="Standart Sapma"
                     value={`${formatTurkishNumber(result.steps.stdDev)} TL`}
+                    desc="σ (örneklem)"
+                  />
+                  <StepRow
+                    label="Standart Sapma (Alt)"
+                    value={`${formatTurkishNumber(result.steps.sigmaLower)} TL`}
+                    desc="Tort1 − σ"
+                  />
+                  <StepRow
+                    label="Standart Sapma (Üst)"
+                    value={`${formatTurkishNumber(result.steps.sigmaUpper)} TL`}
+                    desc="Tort1 + σ"
                   />
                   <StepRow
                     label="±1σ aralığındaki teklif sayısı"
                     value={`${result.steps.filteredBids.length}`}
                   />
                   <StepRow
-                    label="Tort2 (filtrelenmiş ortalama)"
+                    label="Ortalama-2"
                     value={`${formatTurkishNumber(result.steps.tort2)} TL`}
+                    desc="Tort2"
                   />
+                  <StepRow label="C Değeri" value={result.steps.c.toFixed(3)} desc="Tort2 / YM" />
                   <StepRow
-                    label="C (Tort2 / YM)"
-                    value={result.steps.c.toFixed(6)}
-                  />
-                  <StepRow
-                    label="K"
-                    value={result.steps.k.toFixed(6)}
+                    label="K Değeri"
+                    value={result.steps.k.toFixed(3)}
                     desc={
                       result.steps.c.lt(new Decimal('0.60'))
                         ? 'C < 0,60 → K = C'
-                        : 'C ≥ 0,60 → K = 0,60 + 0,40×C'
+                        : result.steps.c.lte(new Decimal('1.00'))
+                          ? '0,60 ≤ C ≤ 1,00 → K = (3,2C − C² − 0,6) / (C + 1)'
+                          : 'C > 1,00 → K = (C² − 0,8C + 1,4) / (C + 1)'
                     }
-                  />
-                  <StepRow
-                    label="N"
-                    value={result.steps.n.toFixed(2)}
                   />
                   <div className="border-t pt-2">
                     <StepRow
-                      label="Sınır Değer (YM × K × N)"
+                      label="Sınır Değer (K × YM / N)"
                       value={`${formatTurkishNumber(result.thresholdValue)} TL`}
                       bold
                     />
@@ -212,9 +203,7 @@ function StepRow({
     <div className="flex items-baseline justify-between gap-4">
       <div>
         <span className={bold ? 'font-semibold' : 'text-muted-foreground'}>{label}</span>
-        {desc && (
-          <span className="text-muted-foreground ml-2 text-xs">({desc})</span>
-        )}
+        {desc && <span className="text-muted-foreground ml-2 text-xs">({desc})</span>}
       </div>
       <span className={`font-mono ${bold ? 'text-base font-bold' : ''}`}>{value}</span>
     </div>

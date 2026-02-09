@@ -20,4 +20,12 @@ export interface CostRow {
   fromDatabase: boolean;
 }
 
-export type CostSortKey = 'rowNumber' | 'pozNo' | 'description' | 'unit' | 'quantity' | 'unitPrice' | 'total';
+export type CostSortKey =
+  | 'rowNumber'
+  | 'pozNo'
+  | 'description'
+  | 'unit'
+  | 'quantity'
+  | 'unitPrice'
+  | 'total'
+  | 'percentage';

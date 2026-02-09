@@ -4,6 +4,7 @@ import { Toaster } from '@shared/components/ui/sonner';
 import { ThemeProvider } from '@shared/components/theme-provider';
 import { TooltipProvider } from '@shared/components/ui/tooltip';
 import { AuthProvider } from '@features/auth/context';
+import { ShellWrapper } from '@shared/components/shell-wrapper';
 import { createClient } from '@shared/lib/supabase/server';
 import '../public/assets/css/globals.css';
 
@@ -43,7 +44,9 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <TooltipProvider>
-            <AuthProvider initialUser={user}>{children}</AuthProvider>
+            <AuthProvider initialUser={user}>
+              <ShellWrapper>{children}</ShellWrapper>
+            </AuthProvider>
             <Toaster />
           </TooltipProvider>
         </ThemeProvider>

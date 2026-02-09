@@ -41,11 +41,7 @@ interface UploadPozDialogProps {
 
 type Step = 'upload' | 'column-mapping' | 'preview';
 
-export function UploadPozDialog({
-  open,
-  onOpenChange,
-  onApply,
-}: UploadPozDialogProps) {
+export function UploadPozDialog({ open, onOpenChange, onApply }: UploadPozDialogProps) {
   const [step, setStep] = useState<Step>('upload');
   const [parsedExcel, setParsedExcel] = useState<ParsedExcel | null>(null);
   const [mapping, setMapping] = useState<ExcelImportMapping>({
@@ -65,7 +61,13 @@ export function UploadPozDialog({
   const resetState = useCallback(() => {
     setStep('upload');
     setParsedExcel(null);
-    setMapping({ pozNoColumn: 0, descriptionColumn: 1, unitColumn: 2, quantityColumn: 3, unitPriceColumn: 4 });
+    setMapping({
+      pozNoColumn: 0,
+      descriptionColumn: 1,
+      unitColumn: 2,
+      quantityColumn: 3,
+      unitPriceColumn: 4,
+    });
     setImportResult(null);
     setError(null);
     setIsDragging(false);
@@ -225,7 +227,8 @@ export function UploadPozDialog({
 
               <p className="text-muted-foreground flex items-center justify-center gap-1 text-center text-xs">
                 <Info className="size-3" />
-                Poz No, Açıklama, Birim, Miktar ve Birim Fiyat sütunlarını içeren bir Excel dosyası seçin.
+                Poz No, Açıklama, Birim, Miktar ve Birim Fiyat sütunlarını içeren bir Excel dosyası
+                seçin.
               </p>
 
               {isLoading && (
@@ -245,13 +248,15 @@ export function UploadPozDialog({
           {step === 'column-mapping' && parsedExcel && (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                {([
-                  ['pozNoColumn', 'Poz No Sütunu'],
-                  ['descriptionColumn', 'Açıklama Sütunu'],
-                  ['unitColumn', 'Birim Sütunu'],
-                  ['quantityColumn', 'Miktar Sütunu'],
-                  ['unitPriceColumn', 'Birim Fiyat Sütunu'],
-                ] as const).map(([field, label]) => (
+                {(
+                  [
+                    ['pozNoColumn', 'Poz No Sütunu'],
+                    ['descriptionColumn', 'Açıklama Sütunu'],
+                    ['unitColumn', 'Birim Sütunu'],
+                    ['quantityColumn', 'Miktar Sütunu'],
+                    ['unitPriceColumn', 'Birim Fiyat Sütunu'],
+                  ] as const
+                ).map(([field, label]) => (
                   <div key={field} className="space-y-2">
                     <Label>{label}</Label>
                     <select
@@ -330,9 +335,7 @@ export function UploadPozDialog({
                 <div className="text-muted-foreground py-8 text-center">
                   <AlertTriangle className="mx-auto mb-4 size-12 text-amber-500" />
                   <p>Aktarılacak satır bulunamadı.</p>
-                  <p className="mt-2 text-sm">
-                    Lütfen sütun eşleştirmelerini kontrol edin.
-                  </p>
+                  <p className="mt-2 text-sm">Lütfen sütun eşleştirmelerini kontrol edin.</p>
                 </div>
               ) : (
                 <div className="max-h-64 overflow-auto rounded-lg border">
@@ -353,10 +356,7 @@ export function UploadPozDialog({
                         <tr key={idx} className="border-b last:border-b-0">
                           <td className="text-muted-foreground px-3 py-2">{idx + 1}</td>
                           <td className="px-3 py-2 font-mono text-xs">{row.pozNo}</td>
-                          <td
-                            className="max-w-[180px] truncate px-3 py-2"
-                            title={row.description}
-                          >
+                          <td className="max-w-[180px] truncate px-3 py-2" title={row.description}>
                             {row.description}
                           </td>
                           <td className="px-3 py-2 text-xs">{row.unit}</td>

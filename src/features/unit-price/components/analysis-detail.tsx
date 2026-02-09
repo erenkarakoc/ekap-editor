@@ -15,10 +15,22 @@ import { formatTurkishNumber } from '@shared/lib/turkish-number';
 import type { PozWithAnalysis, AnalysisCategory } from '../types';
 
 const CATEGORY_CONFIG: Record<AnalysisCategory, { label: string; color: string }> = {
-  malzeme: { label: 'Malzeme', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
-  iscilik: { label: 'İşçilik', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' },
-  makine: { label: 'Makine', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
-  nakliye: { label: 'Nakliye', color: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+  malzeme: {
+    label: 'Malzeme',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+  },
+  iscilik: {
+    label: 'İşçilik',
+    color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300',
+  },
+  makine: {
+    label: 'Makine',
+    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
+  },
+  nakliye: {
+    label: 'Nakliye',
+    color: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  },
 };
 
 interface AnalysisDetailProps {
@@ -118,7 +130,9 @@ export function AnalysisDetail({ poz }: AnalysisDetailProps) {
                         {formatTurkishNumber(item.quantity.times(item.unitPrice))}
                       </TableCell>
                       <TableCell>
-                        <span className={`rounded px-1.5 py-0.5 text-xs ${CATEGORY_CONFIG[cat].color}`}>
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-xs ${CATEGORY_CONFIG[cat].color}`}
+                        >
                           {CATEGORY_CONFIG[cat].label}
                         </span>
                       </TableCell>
@@ -133,13 +147,15 @@ export function AnalysisDetail({ poz }: AnalysisDetailProps) {
           <div className="mt-4 space-y-1.5">
             {categoryTotals.map((ct) => (
               <div key={ct.category} className="flex items-center justify-between text-sm">
-                <span className={`rounded px-1.5 py-0.5 text-xs ${CATEGORY_CONFIG[ct.category].color}`}>
+                <span
+                  className={`rounded px-1.5 py-0.5 text-xs ${CATEGORY_CONFIG[ct.category].color}`}
+                >
                   {CATEGORY_CONFIG[ct.category].label}
                 </span>
                 <span className="font-mono">{formatTurkishNumber(ct.total)} TL</span>
               </div>
             ))}
-            <div className="border-t pt-1.5 flex justify-between text-sm">
+            <div className="flex justify-between border-t pt-1.5 text-sm">
               <span className="text-muted-foreground">Ara Toplam</span>
               <span className="font-mono">{formatTurkishNumber(subtotal)} TL</span>
             </div>
@@ -147,7 +163,7 @@ export function AnalysisDetail({ poz }: AnalysisDetailProps) {
               <span className="text-muted-foreground">Kar ve Genel Gider (%{profitRate})</span>
               <span className="font-mono">{formatTurkishNumber(profit)} TL</span>
             </div>
-            <div className="border-t pt-1.5 flex justify-between font-medium">
+            <div className="flex justify-between border-t pt-1.5 font-medium">
               <span>Toplam</span>
               <span className="font-mono">{formatTurkishNumber(grandTotal)} TL</span>
             </div>
