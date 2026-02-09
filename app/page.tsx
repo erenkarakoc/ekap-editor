@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FileText, Calculator } from 'lucide-react';
+import { FileText, Calculator, Target, Search, TrendingUp } from 'lucide-react';
 
 import { Header } from '@shared/components/header';
 import { Card, CardHeader, CardTitle, CardDescription } from '@shared/components/ui/card';
@@ -17,6 +17,24 @@ const features = [
     href: '/yaklasik-maliyet',
     icon: Calculator,
   },
+  {
+    title: 'Sınır Değer',
+    description: 'Aşırı düşük teklif sınır değer hesaplama',
+    href: '/sinir-deger',
+    icon: Target,
+  },
+  {
+    title: 'Birim Fiyat',
+    description: 'Birim fiyat analizi görüntüle',
+    href: '/birim-fiyat',
+    icon: Search,
+  },
+  {
+    title: 'Fiyat Farkı',
+    description: 'Fiyat farkı hesaplama',
+    href: '/fiyat-farki',
+    icon: TrendingUp,
+  },
 ];
 
 export default function HomePage() {
@@ -25,11 +43,11 @@ export default function HomePage() {
       <Header />
 
       <main className="flex flex-1 flex-col items-center justify-center p-6">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-4xl">
           <h1 className="mb-2 text-2xl font-bold">Hoş Geldiniz</h1>
           <p className="text-muted-foreground mb-8">Çalışmak istediğiniz aracı seçin.</p>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
               <Link key={feature.href} href={feature.href} className="group">
                 <Card className="group-hover:border-primary/50 h-full transition-colors group-hover:shadow-md">

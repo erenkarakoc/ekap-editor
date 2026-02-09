@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, LogOut, UserIcon, Upload, Save, Loader2 } from 'lucide-react';
+import { LogOut, UserIcon, Upload, Save, Loader2 } from 'lucide-react';
 
 import { Button } from '@shared/components/ui/button';
 import {
@@ -15,6 +15,7 @@ import { useAuth } from '@features/auth/context';
 
 interface HeaderProps {
   children?: React.ReactNode;
+  title?: string | null;
   variant?: 'default' | 'editor';
   // Editor-specific props
   onUpload?: () => void;
@@ -25,6 +26,7 @@ interface HeaderProps {
 
 export function Header({
   children,
+  title,
   variant = 'default',
   onUpload,
   onSave,
@@ -37,13 +39,11 @@ export function Header({
     <header className="bg-background/95 z-20 flex h-12 shrink-0 items-center justify-between overflow-hidden border-b px-2 backdrop-blur">
       {/* Left side */}
       <div className="flex h-full items-center overflow-hidden">
-        {/* Branding */}
-        <Link href="/" className="text-primary flex h-8 shrink-0 items-center gap-2 px-2">
-          <div className="bg-primary text-primary-foreground flex aspect-square size-6 items-center justify-center rounded-sm">
-            <FileText className="size-3.5" />
-          </div>
-          <span className="hidden text-sm font-semibold lg:inline-block">EKAP Editör</span>
-        </Link>
+        {title && (
+          <Link href="/" className="text-foreground flex h-8 shrink-0 items-center px-2 text-sm font-semibold">
+            {title}
+          </Link>
+        )}
 
         {children}
       </div>

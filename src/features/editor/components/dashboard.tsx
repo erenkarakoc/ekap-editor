@@ -301,6 +301,7 @@ export default function Dashboard() {
   return (
     <div className="bg-background selection:bg-primary/10 flex h-screen flex-col">
       <Header
+        title="EKAP Editör"
         variant="editor"
         onUpload={() => fileInputRef.current?.click()}
         onSave={handleSave}

@@ -4,26 +4,15 @@ import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallba
 import {
   Search,
   Info,
-  ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
   Settings2,
-  EyeOff,
-  ArrowLeftRight,
-  ArrowUpNarrowWide,
-  ArrowDownWideNarrow,
   FileSpreadsheet,
-  AlertTriangle,
 } from 'lucide-react';
-import { cn } from '@shared/lib/utils';
-
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Separator } from '@shared/components/ui/separator';
 import {
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '@shared/components/ui/table';
@@ -37,19 +26,14 @@ import {
   DropdownMenuTrigger,
 } from '@shared/components/ui/dropdown-menu';
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-  ContextMenuSeparator,
-} from '@shared/components/ui/context-menu';
-import {
   EkapDocument,
   EkapItem,
   updateItemPrice,
   parseTurkishNumber,
   formatTurkishNumber,
 } from '@features/editor/lib/ekap-crypto';
+import { SortableHead } from '@shared/components/sortable-head';
+import { measureTextWidth } from '@shared/lib/measure-text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { UploadPricesDialog } from '@features/editor/components/upload-prices-dialog';
 import type { PriceUpdate } from '@features/editor/lib/excel-parser';
@@ -71,19 +55,6 @@ const COLUMN_LABELS: Record<string, string> = {
   fiyatDecimal: 'Birim Fiyat',
   toplamDecimal: 'Toplam',
 } as const;
-
-let measureTextCanvas: HTMLCanvasElement | null = null;
-
-const measureTextWidth = (text: string, font: string = '12px sans-serif'): number => {
-  if (typeof window === 'undefined') return 0;
-  if (!measureTextCanvas) {
-    measureTextCanvas = document.createElement('canvas');
-  }
-  const context = measureTextCanvas.getContext('2d');
-  if (!context) return text.length * 8;
-  context.font = font;
-  return context.measureText(text).width;
-};
 
 const DEFAULT_VISIBLE_COLUMNS = [
   'siraNo',
@@ -1121,122 +1092,3 @@ export function EditorView({
   );
 }
 
-interface SortableHeadProps {
-  label: string;
-  sortKey: SortKey;
-  activeConfig: { key: SortKey | null; direction: 'asc' | 'desc' | null };
-  onSort: (key: SortKey) => void;
-  onSortExplicit?: (key: SortKey, direction: 'asc' | 'desc') => void;
-  width: number;
-  onResize: (width: number) => void;
-  onHide?: (key: string) => void;
-  onFit?: (key: string) => void;
-  onShrink?: (key: string) => void;
-  className?: string;
-}
-
-const SortableHead = React.memo(function SortableHead({
-  label,
-  sortKey,
-  activeConfig,
-  onSort,
-  onSortExplicit,
-  width,
-  onResize,
-  onHide,
-  onFit,
-  className,
-}: SortableHeadProps) {
-  const isSorted = activeConfig.key === sortKey;
-  const direction = isSorted ? activeConfig.direction : null;
-
-  const [isResizing, setIsResizing] = useState(false);
-  const startX = useRef(0);
-  const startWidth = useRef(0);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-    startX.current = e.pageX;
-    startWidth.current = width;
-
-    const handleMouseMove = (em: MouseEvent) => {
-      const diff = em.pageX - startX.current;
-      onResize(Math.max(40, startWidth.current + diff));
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  };
-
-  return (
-    <TableHead
-      className={cn(
-        'text-foreground border-border group bg-muted/50 relative h-10 border-r border-b p-0 font-bold select-none',
-        className,
-      )}
-      style={{ width, minWidth: width, maxWidth: width }}
-    >
-      <ContextMenu>
-        <ContextMenuTrigger className="h-full w-full">
-          <div
-            className="hover:bg-muted flex h-full w-full cursor-pointer items-center justify-between px-2 transition-colors"
-            onClick={() => onSort(sortKey)}
-          >
-            <span className="truncate text-xs">{label}</span>
-            <div className="flex items-center">
-              {direction === 'asc' ? (
-                <ArrowUp className="text-primary size-3.5" />
-              ) : direction === 'desc' ? (
-                <ArrowDown className="text-primary size-3.5" />
-              ) : (
-                <ArrowUpDown className="text-muted-foreground/30 group-hover:text-muted-foreground/60 size-3.5 transition-colors" />
-              )}
-            </div>
-          </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent className="w-56">
-          <ContextMenuItem onClick={() => onHide?.(sortKey)} className="cursor-pointer gap-2">
-            <EyeOff className="size-4" />
-            <span>Gizle</span>
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onClick={() => onFit?.(sortKey)} className="cursor-pointer gap-2">
-            <ArrowLeftRight className="size-4" />
-            <span>Sığdır</span>
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onClick={() => onSortExplicit?.(sortKey, 'asc')}
-            className="cursor-pointer gap-2"
-          >
-            <ArrowUpNarrowWide className="size-4" />
-            <span>Sırala - Artan</span>
-          </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => onSortExplicit?.(sortKey, 'desc')}
-            className="cursor-pointer gap-2"
-          >
-            <ArrowDownWideNarrow className="size-4" />
-            <span>Sırala - Azalan</span>
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-
-      {/* Resize Handle */}
-      <div
-        onMouseDown={handleMouseDown}
-        className={cn(
-          'hover:bg-primary/50 absolute top-0 right-0 bottom-0 z-10 w-1 cursor-col-resize transition-colors',
-          isResizing && 'bg-primary w-0.5',
-        )}
-      />
-    </TableHead>
-  );
-});
