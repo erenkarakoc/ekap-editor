@@ -8,11 +8,17 @@ directories:
 files:
   - dist/**/*
 
+extraResources:
+  - from: nextjs-standalone
+    to: nextjs-standalone
+    filter:
+      - '**/*'
+
 win:
   target:
     - target: nsis
       arch: [x64]
-  icon: ../public/favicon.ico
+  icon: ../public/assets/images/favicon.ico
 
 nsis:
   oneClick: false

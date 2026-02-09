@@ -10,7 +10,8 @@
     "dev:next": "cd .. && npm run dev",
     "dev:electron": "wait-on -t 30000 tcp:3000 && electron .",
     "compile": "tsc",
-    "build": "tsc && electron-builder --config electron-builder.yml",
+    "build:nextjs": "node scripts/build-nextjs.mjs",
+    "build": "npm run build:nextjs && tsc && electron-builder --config electron-builder.yml",
     "start": "electron ."
   },
   "devDependencies": {

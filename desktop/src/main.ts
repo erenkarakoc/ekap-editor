@@ -1,9 +1,12 @@
 import { app, BrowserWindow, ipcMain, shell, session } from 'electron';
 import path from 'node:path';
+import { startServer, stopServer } from './server';
 
+const isDev = !app.isPackaged;
 const DEV_SERVER_URL = 'http://localhost:3000';
 
 let mainWindow: BrowserWindow | null = null;
+let serverUrl: string = DEV_SERVER_URL;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -20,11 +23,11 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      devTools: false,
+      devTools: isDev,
     },
   });
 
-  mainWindow.loadURL(DEV_SERVER_URL);
+  mainWindow.loadURL(serverUrl);
 
   // Show window when content is ready (avoids white flash)
   mainWindow.once('ready-to-show', () => {
@@ -50,8 +53,8 @@ function createWindow(): void {
   // Navigate external links in default browser instead of in-app
   mainWindow.webContents.on('will-navigate', (event, url) => {
     const parsedUrl = new URL(url);
-    const devUrl = new URL(DEV_SERVER_URL);
-    if (parsedUrl.origin !== devUrl.origin) {
+    const appUrl = new URL(serverUrl);
+    if (parsedUrl.origin !== appUrl.origin) {
       event.preventDefault();
       shell.openExternal(url);
     }
@@ -62,19 +65,23 @@ function createWindow(): void {
   });
 }
 
-// Security: Set CSP headers
+// Security: Set CSP headers based on actual server origin
 function setupCSP(): void {
+  const origin = new URL(serverUrl);
+  const httpOrigin = origin.origin;
+  const wsOrigin = httpOrigin.replace(/^http/, 'ws');
+
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' http://localhost:* ws://localhost:*; " +
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*; " +
-            "style-src 'self' 'unsafe-inline' http://localhost:* https://fonts.googleapis.com; " +
-            "font-src 'self' https://fonts.gstatic.com; " +
-            "img-src 'self' data: blob: http://localhost:*; " +
-            "connect-src 'self' http://localhost:* ws://localhost:* https://*.supabase.co wss://*.supabase.co",
+          `default-src 'self' ${httpOrigin} ${wsOrigin}; ` +
+            `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${httpOrigin}; ` +
+            `style-src 'self' 'unsafe-inline' ${httpOrigin} https://fonts.googleapis.com; ` +
+            `font-src 'self' https://fonts.gstatic.com; ` +
+            `img-src 'self' data: blob: ${httpOrigin}; ` +
+            `connect-src 'self' ${httpOrigin} ${wsOrigin} https://*.supabase.co wss://*.supabase.co`,
         ],
       },
     });
@@ -93,7 +100,17 @@ ipcMain.on('window-maximize', () => {
 ipcMain.on('window-close', () => mainWindow?.close());
 ipcMain.handle('window-is-maximized', () => mainWindow?.isMaximized() ?? false);
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  if (!isDev) {
+    try {
+      serverUrl = await startServer(process.resourcesPath);
+    } catch (err) {
+      console.error('Failed to start Next.js server:', err);
+      app.quit();
+      return;
+    }
+  }
+
   setupCSP();
   createWindow();
 
@@ -102,6 +119,10 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+app.on('before-quit', () => {
+  stopServer();
 });
 
 app.on('window-all-closed', () => {

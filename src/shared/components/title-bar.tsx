@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LogOut, UserIcon, Moon, Sun, Minus, Square, X, Copy } from 'lucide-react';
+import { LogOut, UserIcon, Moon, Sun, Minus, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Button } from '@shared/components/ui/button';
@@ -31,6 +31,38 @@ interface TitleBarProps {
   title: string;
 }
 
+function TablerSquare(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+      />
+    </svg>
+  );
+}
+
+function TablerSquares(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      >
+        <path d="M8 10a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2z" />
+        <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+      </g>
+    </svg>
+  );
+}
+
 export function TitleBar({ title }: TitleBarProps) {
   const { user, signOut } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
@@ -47,21 +79,29 @@ export function TitleBar({ title }: TitleBarProps) {
 
   return (
     <div
-      className="bg-background/95 flex h-8 shrink-0 items-center justify-between border-b px-3 backdrop-blur"
+      className="bg-background/95 flex h-8 shrink-0 items-center border-b backdrop-blur select-none"
       style={isElectron ? ({ WebkitAppRegion: 'drag' } as React.CSSProperties) : undefined}
     >
       {/* Left: Current tool name */}
-      <span className="text-foreground text-sm font-semibold">{title}</span>
-
-      {/* Right: Theme + User + Window Controls */}
       <div
-        className="flex items-center gap-1"
+        className="flex h-full items-center px-3"
+        style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
+      >
+        <span className="text-foreground text-sm font-semibold">{title}</span>
+      </div>
+
+      {/* Draggable spacer */}
+      <div className="h-full flex-1" />
+
+      {/* Right side: Theme + User */}
+      <div
+        className="flex h-full items-center gap-1 px-2"
         style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
       >
         <Button
           variant="ghost"
           size="icon"
-          className="size-6 cursor-pointer"
+          className="size-7 cursor-pointer"
           onClick={() => setTheme(resolvedTheme === 'light' ? 'dark' : 'light')}
         >
           <Sun className="size-3.5 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
@@ -71,7 +111,7 @@ export function TitleBar({ title }: TitleBarProps) {
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-6 cursor-pointer">
+              <Button variant="ghost" size="icon" className="size-7 cursor-pointer">
                 <UserIcon className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -90,46 +130,53 @@ export function TitleBar({ title }: TitleBarProps) {
           </DropdownMenu>
         ) : (
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" asChild>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
               <Link href="/login">Giriş Yap</Link>
             </Button>
-            <Button size="sm" className="h-6 px-2 text-xs" asChild>
+            <Button size="sm" className="h-7 px-2 text-xs" asChild>
               <Link href="/register">Kayıt Ol</Link>
             </Button>
           </div>
         )}
-
-        {/* Window Controls (Electron only) */}
-        {isElectron && (
-          <>
-            <div className="bg-border mx-1 h-4 w-px" />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-muted size-6 cursor-pointer rounded-none"
-              onClick={() => window.electronAPI?.windowMinimize()}
-            >
-              <Minus className="size-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-muted size-6 cursor-pointer rounded-none"
-              onClick={() => window.electronAPI?.windowMaximize()}
-            >
-              {isMaximized ? <Copy className="size-3" /> : <Square className="size-3" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-6 cursor-pointer rounded-none hover:bg-red-500/90 hover:text-white"
-              onClick={() => window.electronAPI?.windowClose()}
-            >
-              <X className="size-3.5" />
-            </Button>
-          </>
-        )}
       </div>
+
+      {/* Window Controls (Electron only) */}
+      {isElectron && (
+        <div
+          className="flex h-full items-center"
+          style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
+        >
+          <div className="bg-border mx-1 h-4 w-px" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-muted h-full w-10 cursor-pointer rounded-none border-none shadow-none"
+            onClick={() => window.electronAPI?.windowMinimize()}
+          >
+            <Minus className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-muted h-full w-10 cursor-pointer rounded-none border-none shadow-none"
+            onClick={() => window.electronAPI?.windowMaximize()}
+          >
+            {isMaximized ? (
+              <TablerSquares className="size-3.5 scale-x-[-1]" />
+            ) : (
+              <TablerSquare className="size-3.5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-full w-10 cursor-pointer rounded-none border-none shadow-none hover:bg-red-500 hover:text-white"
+            onClick={() => window.electronAPI?.windowClose()}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
