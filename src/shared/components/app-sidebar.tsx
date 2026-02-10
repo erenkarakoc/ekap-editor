@@ -72,9 +72,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       <div className="flex h-8 shrink-0 items-center border-b px-3">
         <Link href="/" className="flex items-center gap-2 overflow-hidden">
           <FileText className="size-4 shrink-0" />
-          {!collapsed && (
-            <span className="truncate text-sm font-bold tracking-tight">EKAP Editör</span>
-          )}
+          {!collapsed && <span className="truncate text-sm">İhale Araçları</span>}
         </Link>
       </div>
 

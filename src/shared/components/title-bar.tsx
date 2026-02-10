@@ -67,11 +67,12 @@ export function TitleBar({ title }: TitleBarProps) {
   const { user, signOut } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [isMaximized, setIsMaximized] = useState(false);
-  const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
+  const [isElectron, setIsElectron] = useState(false);
 
   useEffect(() => {
     if (!window.electronAPI) return;
 
+    setIsElectron(true);
     window.electronAPI.windowIsMaximized().then(setIsMaximized);
     const cleanup = window.electronAPI.onMaximizeChange(setIsMaximized);
     return cleanup;
@@ -87,7 +88,7 @@ export function TitleBar({ title }: TitleBarProps) {
         className="flex h-full items-center px-3"
         style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
       >
-        <span className="text-foreground text-sm font-semibold">{title}</span>
+        <span className="text-foreground text-sm">{title}</span>
       </div>
 
       {/* Draggable spacer */}
@@ -95,7 +96,7 @@ export function TitleBar({ title }: TitleBarProps) {
 
       {/* Right side: Theme + User */}
       <div
-        className="flex h-full items-center gap-1 px-2"
+        className="flex h-full items-center gap-1"
         style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
       >
         <Button
@@ -150,7 +151,7 @@ export function TitleBar({ title }: TitleBarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="hover:bg-muted h-full w-10 cursor-pointer rounded-none border-none shadow-none"
+            className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
             onClick={() => window.electronAPI?.windowMinimize()}
           >
             <Minus className="size-4" />
@@ -158,13 +159,13 @@ export function TitleBar({ title }: TitleBarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="hover:bg-muted h-full w-10 cursor-pointer rounded-none border-none shadow-none"
+            className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
             onClick={() => window.electronAPI?.windowMaximize()}
           >
             {isMaximized ? (
-              <TablerSquares className="size-3.5 scale-x-[-1]" />
+              <TablerSquares className="size-3 scale-x-[-1]" />
             ) : (
-              <TablerSquare className="size-3.5" />
+              <TablerSquare className="size-3" />
             )}
           </Button>
           <Button

@@ -8,6 +8,8 @@ directories:
 files:
   - dist/**/*
 
+afterPack: ./scripts/after-pack.cjs
+
 extraResources:
   - from: nextjs-standalone
     to: nextjs-standalone

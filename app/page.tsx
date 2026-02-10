@@ -10,7 +10,6 @@ import {
   Percent,
   ArrowRight,
 } from 'lucide-react';
-import { Kbd } from '@shared/components/ui/kbd';
 
 const features = [
   {
@@ -72,12 +71,7 @@ export default function HomePage() {
                   <feature.icon className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{feature.title}</span>
-                    {feature.shortcut && (
-                      <Kbd className="hidden sm:inline-flex">{feature.shortcut}</Kbd>
-                    )}
-                  </div>
+                  <span className="text-sm font-medium">{feature.title}</span>
                   <p className="text-muted-foreground truncate text-xs">{feature.description}</p>
                 </div>
                 <ArrowRight className="text-muted-foreground size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, session } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell, session } from 'electron';
 import path from 'node:path';
 import { startServer, stopServer } from './server';
 
@@ -106,6 +106,10 @@ app.whenReady().then(async () => {
       serverUrl = await startServer(process.resourcesPath);
     } catch (err) {
       console.error('Failed to start Next.js server:', err);
+      dialog.showErrorBox(
+        'EKAP Editör',
+        `Sunucu başlatılamadı:\n${err instanceof Error ? err.message : String(err)}`,
+      );
       app.quit();
       return;
     }
