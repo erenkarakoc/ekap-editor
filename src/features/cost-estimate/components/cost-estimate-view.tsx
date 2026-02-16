@@ -148,7 +148,7 @@ export function CostEstimateView() {
         if (key === 'quantity' || key === 'unitPrice' || key === 'total' || key === 'percentage') {
           const aVal = key === 'percentage' ? a.total : a[key];
           const bVal = key === 'percentage' ? b.total : b[key];
-          return aVal.minus(bVal).toNumber() * mul;
+          return aVal.comparedTo(bVal) * mul;
         }
         return String(a[key]).localeCompare(String(b[key]), 'tr') * mul;
       });

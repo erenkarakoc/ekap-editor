@@ -532,7 +532,7 @@ export function EditorView({
           const multiplier = direction === 'asc' ? 1 : -1;
 
           if (key === 'adetDecimal' || key === 'fiyatDecimal' || key === 'toplamDecimal') {
-            return a[key].minus(b[key]).toNumber() * multiplier;
+            return a[key].comparedTo(b[key]) * multiplier;
           }
 
           if (key === 'index') {

@@ -197,7 +197,7 @@ export function PercentageCostView() {
         if (key === 'percentage') {
           const aPct = getEffectivePercentage(a.percentageLow, a.percentageHigh);
           const bPct = getEffectivePercentage(b.percentageLow, b.percentageHigh);
-          return aPct.minus(bPct).toNumber() * mul;
+          return aPct.comparedTo(bPct) * mul;
         }
         if (
           key === 'quantity' ||
@@ -205,7 +205,7 @@ export function PercentageCostView() {
           key === 'total' ||
           key === 'estimatedCost'
         ) {
-          return a[key].minus(b[key]).toNumber() * mul;
+          return a[key].comparedTo(b[key]) * mul;
         }
         return String(a[key]).localeCompare(String(b[key]), 'tr') * mul;
       });

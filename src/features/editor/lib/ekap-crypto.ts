@@ -330,6 +330,16 @@ export async function createEkapZip(document: EkapDocument): Promise<ArrayBuffer
   const kisimEl = doc.querySelector('Kisim');
   if (kisimEl) {
     kisimEl.setAttribute('KisimTeklifToplam', formatTurkishNumber(ihaleToplam));
+
+    // Update PersonelHarici/PersoneleDayali totals
+    const personelHariciEl = kisimEl.querySelector('PersonelHariciTeklifToplami');
+    if (personelHariciEl) {
+      personelHariciEl.textContent = formatTurkishNumber(ihaleToplam);
+    }
+    const personelDayaliEl = kisimEl.querySelector('PersoneleDayaliTeklifToplami');
+    if (personelDayaliEl) {
+      personelDayaliEl.textContent = '0,00';
+    }
   }
 
   // Update Ihale IhaleTeklifToplam attribute
@@ -338,9 +348,19 @@ export async function createEkapZip(document: EkapDocument): Promise<ArrayBuffer
     ihaleEl.setAttribute('IhaleTeklifToplam', formatTurkishNumber(ihaleToplam));
   }
 
-  // Serialize XML
+  // Update TeklifToplam element
+  const teklifToplamEl = doc.querySelector('TeklifToplam');
+  if (teklifToplamEl) {
+    teklifToplamEl.setAttribute('Fiyat', formatTurkishNumber(ihaleToplam));
+  }
+
+  // Serialize XML and fix self-closing tags for .NET XML compatibility
   const serializer = new XMLSerializer();
-  const updatedXml = serializer.serializeToString(doc);
+  let updatedXml = serializer.serializeToString(doc);
+  // Convert self-closing empty elements to paired tags: <Tag/> → <Tag></Tag>
+  updatedXml = updatedXml.replace(/<(\w+)\/>/g, '<$1></$1>');
+  // Ensure space before /> on attribute-bearing elements: ..."/> → ..." />
+  updatedXml = updatedXml.replace(/([^/\s])\/>/g, '$1 />');
 
   zip.file('teklifDosyasi.xml', updatedXml);
   zip.file('dosyaBilgileri.xml', document.dosyaBilgileri || '<KIKEKAP />');
