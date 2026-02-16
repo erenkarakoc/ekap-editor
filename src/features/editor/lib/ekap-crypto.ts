@@ -45,6 +45,7 @@ export interface EkapDocument {
 }
 
 import { parseTurkishNumber, formatTurkishNumber } from '@shared/lib/turkish-number';
+import { numberToTurkishWords } from '@shared/lib/number-to-words';
 export { parseTurkishNumber, formatTurkishNumber };
 
 // Derive AES key from password using SHA1
@@ -244,12 +245,16 @@ export function updateItemPrice(
   // Recalculate grand total using Decimal reduce
   const grandTotal = items.reduce((sum, i) => sum.plus(i.toplamDecimal), new Decimal(0));
 
+  // Determine currency from items (default TRY)
+  const currency = items[0]?.paraBirimi || 'TRY';
+
   return {
     ...document,
     items,
     tenderInfo: {
       ...document.tenderInfo,
       toplam: formatTurkishNumber(grandTotal),
+      toplamYazi: numberToTurkishWords(grandTotal, currency),
     },
   };
 }
@@ -265,6 +270,8 @@ export async function createEkapZip(document: EkapDocument): Promise<ArrayBuffer
   // Update item prices in XML
   const kalemler = doc.querySelectorAll('IhaleKalem');
   let ihaleToplam = new Decimal(0);
+  let personnelTotal = new Decimal(0);
+  let nonPersonnelTotal = new Decimal(0);
 
   document.items.forEach((item, index) => {
     const kalem = kalemler[index];
@@ -322,36 +329,49 @@ export async function createEkapZip(document: EkapDocument): Promise<ArrayBuffer
       ihaleKalemlerParent.setAttribute('KalemTeklifToplam', item.toplam);
     }
 
-    // Accumulate for grand total
+    // Accumulate for grand total and personnel split
     ihaleToplam = ihaleToplam.plus(item.toplamDecimal);
+    const isPersonnel = kalem.getAttribute('PersonelHizmetAlimMi') === '1';
+    if (isPersonnel) {
+      personnelTotal = personnelTotal.plus(item.toplamDecimal);
+    } else {
+      nonPersonnelTotal = nonPersonnelTotal.plus(item.toplamDecimal);
+    }
   });
+
+  // Determine currency from first item (default TRY)
+  const currency = document.items[0]?.paraBirimi || 'TRY';
+  const toplamYazi = numberToTurkishWords(ihaleToplam, currency);
 
   // Update Kisim KisimTeklifToplam attribute (sum of all items)
   const kisimEl = doc.querySelector('Kisim');
   if (kisimEl) {
     kisimEl.setAttribute('KisimTeklifToplam', formatTurkishNumber(ihaleToplam));
+    kisimEl.setAttribute('KisimFiyatYazi', toplamYazi);
 
-    // Update PersonelHarici/PersoneleDayali totals
+    // Update PersonelHarici/PersoneleDayali totals based on item attributes
     const personelHariciEl = kisimEl.querySelector('PersonelHariciTeklifToplami');
     if (personelHariciEl) {
-      personelHariciEl.textContent = formatTurkishNumber(ihaleToplam);
+      personelHariciEl.textContent = formatTurkishNumber(nonPersonnelTotal);
     }
     const personelDayaliEl = kisimEl.querySelector('PersoneleDayaliTeklifToplami');
     if (personelDayaliEl) {
-      personelDayaliEl.textContent = '0,00';
+      personelDayaliEl.textContent = formatTurkishNumber(personnelTotal);
     }
   }
 
-  // Update Ihale IhaleTeklifToplam attribute
+  // Update Ihale IhaleTeklifToplam attribute and word form
   const ihaleEl = doc.querySelector('Ihale');
   if (ihaleEl) {
     ihaleEl.setAttribute('IhaleTeklifToplam', formatTurkishNumber(ihaleToplam));
+    ihaleEl.setAttribute('IhaleTeklifToplamYazi', toplamYazi);
   }
 
   // Update TeklifToplam element
   const teklifToplamEl = doc.querySelector('TeklifToplam');
   if (teklifToplamEl) {
     teklifToplamEl.setAttribute('Fiyat', formatTurkishNumber(ihaleToplam));
+    teklifToplamEl.setAttribute('FiyatYazi', toplamYazi);
   }
 
   // Serialize XML and fix self-closing tags for .NET XML compatibility
