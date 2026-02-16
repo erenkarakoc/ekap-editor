@@ -271,16 +271,48 @@ export async function createEkapZip(document: EkapDocument): Promise<ArrayBuffer
     if (!kalem) return;
 
     // Update Teklif > Fiyat and Teklif > KalemTeklifToplam
-    const teklifEl = kalem.querySelector('Teklif');
-    if (teklifEl) {
-      const fiyatEl = teklifEl.querySelector('Fiyat');
-      if (fiyatEl) {
-        fiyatEl.textContent = item.fiyat;
+    let teklifEl = kalem.querySelector('Teklif');
+
+    // Teklif elementi yoksa oluştur (orijinalde fiyatı boş olan kalemler için)
+    if (!teklifEl) {
+      teklifEl = doc.createElement('Teklif');
+
+      const children: Record<string, string> = {
+        TeklifId: String(index + 1),
+        ManuelEkleme: 'true',
+        ParaBirimi: item.paraBirimi || 'TRY',
+        UrunKodu: item.urunKodu || '',
+        UrunAd: item.urunAd || '',
+        Adet: item.adet,
+        TicariSunumSekli: item.birim,
+        Fiyat: item.fiyat,
+        Aciklama: '',
+        IslemTanim: '',
+        KalemId: kalem.getAttribute('Id') || '',
+        FirmaBayiTur: '',
+        FirmaBayiNo: '',
+        FirmaTicariAd: '',
+        KalemTeklifToplam: item.toplam,
+        PersonelHizmetAlimMi: kalem.getAttribute('PersonelHizmetAlimMi') || '0',
+        IsKalemiTuru: kalem.querySelector('IsKalemiTuru')?.textContent || '',
+      };
+
+      for (const [tag, value] of Object.entries(children)) {
+        const el = doc.createElement(tag);
+        el.textContent = value;
+        teklifEl.appendChild(el);
       }
-      const kalemToplamEl = teklifEl.querySelector('KalemTeklifToplam');
-      if (kalemToplamEl) {
-        kalemToplamEl.textContent = item.toplam;
-      }
+
+      kalem.appendChild(teklifEl);
+    }
+
+    const fiyatEl = teklifEl.querySelector('Fiyat');
+    if (fiyatEl) {
+      fiyatEl.textContent = item.fiyat;
+    }
+    const kalemToplamEl = teklifEl.querySelector('KalemTeklifToplam');
+    if (kalemToplamEl) {
+      kalemToplamEl.textContent = item.toplam;
     }
 
     // Update parent IhaleKalemler's KalemTeklifToplam attribute
