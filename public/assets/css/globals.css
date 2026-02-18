@@ -177,6 +177,53 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .release-notes h1,
+  .release-notes h2,
+  .release-notes h3,
+  .release-notes h4 {
+    font-weight: 600;
+    margin-top: 0.75em;
+    margin-bottom: 0.25em;
+  }
+
+  .release-notes h1 { font-size: 1em; }
+  .release-notes h2 { font-size: 0.95em; }
+  .release-notes h3 { font-size: 0.9em; }
+  .release-notes h4 { font-size: 0.875em; }
+
+  .release-notes p {
+    margin-bottom: 0.5em;
+  }
+
+  .release-notes ul,
+  .release-notes ol {
+    padding-left: 1.25em;
+    margin-bottom: 0.5em;
+  }
+
+  .release-notes ul { list-style-type: disc; }
+  .release-notes ol { list-style-type: decimal; }
+
+  .release-notes li {
+    margin-bottom: 0.2em;
+  }
+
+  .release-notes a {
+    text-decoration: underline;
+    color: var(--primary);
+  }
+
+  .release-notes code {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.85em;
+    background: var(--muted);
+    border-radius: 3px;
+    padding: 0.1em 0.3em;
+  }
+
+  .release-notes strong { font-weight: 600; }
+  .release-notes em { font-style: italic; }
 }
 
 @layer base {

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell, session } from 'electron';
 import path from 'node:path';
 import { startServer, stopServer } from './server';
+import { initAutoUpdater } from './updater';
 
 const isDev = !app.isPackaged;
 const DEV_SERVER_URL = 'http://localhost:3000';
@@ -117,6 +118,7 @@ app.whenReady().then(async () => {
 
   setupCSP();
   createWindow();
+  initAutoUpdater(mainWindow!);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LogOut, UserIcon, Moon, Sun, Minus, X } from 'lucide-react';
+import { CircleFadingArrowUp, LogOut, UserIcon, Moon, Sun, Minus, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Button } from '@shared/components/ui/button';
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@shared/components/ui/dropdown-menu';
 import { useAuth } from '@features/auth/context';
+import { UpdateDialog } from '@shared/components/update-dialog';
 
 declare global {
   interface Window {
@@ -23,6 +24,13 @@ declare global {
       windowClose: () => void;
       windowIsMaximized: () => Promise<boolean>;
       onMaximizeChange: (callback: (maximized: boolean) => void) => () => void;
+      onUpdateAvailable: (
+        callback: (info: { version: string; releaseNotes: string | null }) => void,
+      ) => () => void;
+      onUpdateProgress: (callback: (info: { percent: number }) => void) => () => void;
+      onUpdateDownloaded: (callback: () => void) => () => void;
+      installUpdate: () => Promise<void>;
+      startDownload: () => Promise<void>;
     };
   }
 }
@@ -68,116 +76,161 @@ export function TitleBar({ title }: TitleBarProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<{
+    version: string;
+    releaseNotes: string | null;
+  } | null>(null);
+  const [downloadPercent, setDownloadPercent] = useState(-1);
+  const [updateReady, setUpdateReady] = useState(false);
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
 
   useEffect(() => {
     if (!window.electronAPI) return;
 
     setIsElectron(true);
     window.electronAPI.windowIsMaximized().then(setIsMaximized);
-    const cleanup = window.electronAPI.onMaximizeChange(setIsMaximized);
-    return cleanup;
+    const cleanupMaximize = window.electronAPI.onMaximizeChange(setIsMaximized);
+    const cleanupAvail = window.electronAPI.onUpdateAvailable((info) => {
+      setUpdateInfo(info);
+      setShowUpdateDialog(true);
+    });
+    const cleanupProgress = window.electronAPI.onUpdateProgress(({ percent }) => {
+      setDownloadPercent(percent);
+    });
+    const cleanupDownloaded = window.electronAPI.onUpdateDownloaded(() => {
+      setUpdateReady(true);
+      setShowUpdateDialog(true);
+    });
+    return () => {
+      cleanupMaximize();
+      cleanupAvail();
+      cleanupProgress();
+      cleanupDownloaded();
+    };
   }, []);
 
   return (
-    <div
-      className="bg-background/95 flex h-8 shrink-0 items-center border-b backdrop-blur select-none"
-      style={isElectron ? ({ WebkitAppRegion: 'drag' } as React.CSSProperties) : undefined}
-    >
-      {/* Left: Current tool name */}
+    <>
       <div
-        className="flex h-full items-center px-3"
-        style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
+        className="bg-background/95 flex h-8 shrink-0 items-center border-b backdrop-blur select-none"
+        style={isElectron ? ({ WebkitAppRegion: 'drag' } as React.CSSProperties) : undefined}
       >
-        <span className="text-foreground text-sm">{title}</span>
-      </div>
-
-      {/* Draggable spacer */}
-      <div className="h-full flex-1" />
-
-      {/* Right side: Theme + User */}
-      <div
-        className="flex h-full items-center gap-1"
-        style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7 cursor-pointer"
-          onClick={() => setTheme(resolvedTheme === 'light' ? 'dark' : 'light')}
+        {/* Left: Current tool name */}
+        <div
+          className="flex h-full items-center px-3"
+          style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
         >
-          <Sun className="size-3.5 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-          <Moon className="absolute size-3.5 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-          <span className="sr-only">Tema değiştir</span>
-        </Button>
-        {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-7 cursor-pointer">
-                <UserIcon className="size-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href="/user" className="cursor-pointer">
-                  <UserIcon className="mr-2 size-4" />
-                  Profilim
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={() => signOut()}>
-                <LogOut className="mr-2 size-4" />
-                Çıkış Yap
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
-              <Link href="/login">Giriş Yap</Link>
+          <span className="text-foreground text-sm">{title}</span>
+        </div>
+
+        {/* Draggable spacer */}
+        <div className="h-full flex-1" />
+
+        {/* Right side: Theme + User */}
+        <div
+          className="flex h-full items-center gap-1"
+          style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
+        >
+          {updateInfo && !showUpdateDialog && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative size-7 cursor-pointer"
+              onClick={() => setShowUpdateDialog(true)}
+            >
+              <CircleFadingArrowUp className="size-3.5" />
+              <span className="bg-primary absolute top-1 right-1 size-1.5 rounded-full" />
             </Button>
-            <Button size="sm" className="h-7 px-2 text-xs" asChild>
-              <Link href="/register">Kayıt Ol</Link>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7 cursor-pointer"
+            onClick={() => setTheme(resolvedTheme === 'light' ? 'dark' : 'light')}
+          >
+            <Sun className="size-3.5 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+            <Moon className="absolute size-3.5 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+            <span className="sr-only">Tema değiştir</span>
+          </Button>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="size-7 cursor-pointer">
+                  <UserIcon className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/user" className="cursor-pointer">
+                    <UserIcon className="mr-2 size-4" />
+                    Profilim
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => signOut()}>
+                  <LogOut className="mr-2 size-4" />
+                  Çıkış Yap
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+                <Link href="/login">Giriş Yap</Link>
+              </Button>
+              <Button size="sm" className="h-7 px-2 text-xs" asChild>
+                <Link href="/register">Kayıt Ol</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Window Controls (Electron only) */}
+        {isElectron && (
+          <div
+            className="flex h-full items-center"
+            style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
+          >
+            <div className="bg-border mx-1 h-4 w-px" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
+              onClick={() => window.electronAPI?.windowMinimize()}
+            >
+              <Minus className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
+              onClick={() => window.electronAPI?.windowMaximize()}
+            >
+              {isMaximized ? (
+                <TablerSquares className="size-3 scale-x-[-1]" />
+              ) : (
+                <TablerSquare className="size-3" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-full w-10 cursor-pointer rounded-none border-none shadow-none hover:bg-red-500 hover:text-white"
+              onClick={() => window.electronAPI?.windowClose()}
+            >
+              <X className="size-4" />
             </Button>
           </div>
         )}
       </div>
-
-      {/* Window Controls (Electron only) */}
-      {isElectron && (
-        <div
-          className="flex h-full items-center"
-          style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
-        >
-          <div className="bg-border mx-1 h-4 w-px" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
-            onClick={() => window.electronAPI?.windowMinimize()}
-          >
-            <Minus className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
-            onClick={() => window.electronAPI?.windowMaximize()}
-          >
-            {isMaximized ? (
-              <TablerSquares className="size-3 scale-x-[-1]" />
-            ) : (
-              <TablerSquare className="size-3" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-full w-10 cursor-pointer rounded-none border-none shadow-none hover:bg-red-500 hover:text-white"
-            onClick={() => window.electronAPI?.windowClose()}
-          >
-            <X className="size-4" />
-          </Button>
-        </div>
-      )}
-    </div>
+      <UpdateDialog
+        open={showUpdateDialog}
+        onOpenChange={setShowUpdateDialog}
+        updateInfo={updateInfo}
+        downloadPercent={downloadPercent}
+        updateReady={updateReady}
+        onDownload={() => window.electronAPI?.startDownload()}
+        onInstall={() => window.electronAPI?.installUpdate()}
+      />
+    </>
   );
 }

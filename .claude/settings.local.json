@@ -35,7 +35,8 @@
       "Bash(select:*)",
       "Bash(test:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:www.electron.build)"
+      "WebFetch(domain:www.electron.build)",
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }

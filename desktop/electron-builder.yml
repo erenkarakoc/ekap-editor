@@ -16,6 +16,12 @@ extraResources:
     filter:
       - '**/*'
 
+publish:
+  provider: github
+  owner: erenkarakoc
+  repo: ekap-editor-releases
+  releaseType: release
+
 win:
   target:
     - target: nsis
