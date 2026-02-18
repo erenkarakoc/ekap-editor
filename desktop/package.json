@@ -1,6 +1,6 @@
 {
   "name": "ekap-editor-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "EKAP Editör Desktop App",
   "main": "dist/main.js",
@@ -12,6 +12,7 @@
     "compile": "tsc",
     "build:nextjs": "node scripts/build-nextjs.mjs",
     "build": "npm run build:nextjs && tsc && electron-builder --config electron-builder.yml",
+    "release": "npm run build:nextjs && tsc && electron-builder --config electron-builder.yml --publish always",
     "start": "electron ."
   },
   "dependencies": {
