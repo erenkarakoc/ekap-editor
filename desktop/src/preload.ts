@@ -17,4 +17,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeListener('window-unmaximized', onUnmaximize);
     };
   },
+  onUpdateAvailable: (callback: () => void) => {
+    ipcRenderer.on('update-available', callback);
+    return () => {
+      ipcRenderer.removeListener('update-available', callback);
+    };
+  },
+  onUpdateDownloaded: (callback: () => void) => {
+    ipcRenderer.on('update-downloaded', callback);
+    return () => {
+      ipcRenderer.removeListener('update-downloaded', callback);
+    };
+  },
+  installUpdate: () => ipcRenderer.invoke('install-update'),
 });

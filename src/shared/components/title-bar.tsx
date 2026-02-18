@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LogOut, UserIcon, Moon, Sun, Minus, X } from 'lucide-react';
+import { ArrowDownToLine, LogOut, UserIcon, Moon, Sun, Minus, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Button } from '@shared/components/ui/button';
@@ -23,6 +23,9 @@ declare global {
       windowClose: () => void;
       windowIsMaximized: () => Promise<boolean>;
       onMaximizeChange: (callback: (maximized: boolean) => void) => () => void;
+      onUpdateAvailable: (callback: () => void) => () => void;
+      onUpdateDownloaded: (callback: () => void) => () => void;
+      installUpdate: () => Promise<void>;
     };
   }
 }
@@ -68,14 +71,19 @@ export function TitleBar({ title }: TitleBarProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
 
   useEffect(() => {
     if (!window.electronAPI) return;
 
     setIsElectron(true);
     window.electronAPI.windowIsMaximized().then(setIsMaximized);
-    const cleanup = window.electronAPI.onMaximizeChange(setIsMaximized);
-    return cleanup;
+    const cleanupMaximize = window.electronAPI.onMaximizeChange(setIsMaximized);
+    const cleanupUpdate = window.electronAPI.onUpdateDownloaded(() => setUpdateReady(true));
+    return () => {
+      cleanupMaximize();
+      cleanupUpdate();
+    };
   }, []);
 
   return (
@@ -99,6 +107,17 @@ export function TitleBar({ title }: TitleBarProps) {
         className="flex h-full items-center gap-1"
         style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
       >
+        {updateReady && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 animate-pulse cursor-pointer gap-1 px-2 text-xs text-green-500 hover:text-green-400"
+            onClick={() => window.electronAPI?.installUpdate()}
+          >
+            <ArrowDownToLine className="size-3" />
+            Güncelle
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
