@@ -17,11 +17,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeListener('window-unmaximized', onUnmaximize);
     };
   },
-  onUpdateAvailable: (callback: () => void) => {
-    ipcRenderer.on('update-available', callback);
-    return () => {
-      ipcRenderer.removeListener('update-available', callback);
-    };
+  onUpdateAvailable: (
+    callback: (info: { version: string; releaseNotes: string | null }) => void,
+  ) => {
+    const handler = (
+      _: Electron.IpcRendererEvent,
+      info: { version: string; releaseNotes: string | null },
+    ) => callback(info);
+    ipcRenderer.on('update-available', handler);
+    return () => ipcRenderer.removeListener('update-available', handler);
+  },
+  onUpdateProgress: (callback: (info: { percent: number }) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, info: { percent: number }) => callback(info);
+    ipcRenderer.on('update-progress', handler);
+    return () => ipcRenderer.removeListener('update-progress', handler);
   },
   onUpdateDownloaded: (callback: () => void) => {
     ipcRenderer.on('update-downloaded', callback);
@@ -30,4 +39,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     };
   },
   installUpdate: () => ipcRenderer.invoke('install-update'),
+  startDownload: () => ipcRenderer.invoke('start-download'),
 });

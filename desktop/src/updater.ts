@@ -1,19 +1,26 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater';
 
 export function initAutoUpdater(mainWindow: BrowserWindow): void {
   if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('checking-for-update', () => {
     console.log('Checking for updates...');
   });
 
-  autoUpdater.on('update-available', () => {
+  autoUpdater.on('update-available', (info: UpdateInfo) => {
     console.log('Update available, downloading...');
-    mainWindow.webContents.send('update-available');
+    const notes = Array.isArray(info.releaseNotes)
+      ? info.releaseNotes.map((n) => n.note ?? '').join('\n\n')
+      : (info.releaseNotes ?? null);
+    mainWindow.webContents.send('update-available', { version: info.version, releaseNotes: notes });
+  });
+
+  autoUpdater.on('download-progress', (progress: ProgressInfo) => {
+    mainWindow.webContents.send('update-progress', { percent: Math.round(progress.percent) });
   });
 
   autoUpdater.on('update-not-available', () => {
@@ -31,6 +38,10 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
 
   ipcMain.handle('install-update', () => {
     autoUpdater.quitAndInstall();
+  });
+
+  ipcMain.handle('start-download', () => {
+    autoUpdater.downloadUpdate();
   });
 
   setTimeout(() => {
