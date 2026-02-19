@@ -36,7 +36,8 @@
       "Bash(test:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.electron.build)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(git ls-tree:*)"
     ]
   }
 }
