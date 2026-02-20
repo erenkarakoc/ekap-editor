@@ -242,7 +242,7 @@
     }
   }
 
-  /* Custom scrollbar - Vercel style */
+  /* Scrollbar */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
