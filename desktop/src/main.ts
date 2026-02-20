@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell, session } from 'electron';
 import path from 'node:path';
-import { startServer, stopServer } from './server';
+import { startServer, stopServer, initLog, log } from './server';
 import { initAutoUpdater } from './updater';
 
 const isDev = !app.isPackaged;
@@ -102,10 +102,16 @@ ipcMain.on('window-close', () => mainWindow?.close());
 ipcMain.handle('window-is-maximized', () => mainWindow?.isMaximized() ?? false);
 
 app.whenReady().then(async () => {
+  initLog(isDev ? undefined : process.resourcesPath);
+
   if (!isDev) {
     try {
       serverUrl = await startServer(process.resourcesPath);
+      log(`Server started at ${serverUrl}`);
     } catch (err) {
+      log(
+        `Failed to start server: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
+      );
       console.error('Failed to start Next.js server:', err);
       dialog.showErrorBox(
         'EKAP Editör',

@@ -2,8 +2,30 @@ import { spawn, ChildProcess, execSync } from 'node:child_process';
 import net from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
+import { app } from 'electron';
 
 let serverProcess: ChildProcess | null = null;
+let logStream: fs.WriteStream | null = null;
+
+export function initLog(resourcesPath?: string): void {
+  let enabled = process.env.DEBUG === 'true';
+
+  // In production, check the bundled .env
+  if (!enabled && resourcesPath) {
+    const envVars = loadEnvFile(path.join(resourcesPath, 'nextjs-standalone', '.env'));
+    enabled = envVars.DEBUG === 'true';
+  }
+
+  if (!enabled) return;
+  const logFile = path.join(app.getPath('userData'), 'ekap-server.log');
+  logStream = fs.createWriteStream(logFile, { flags: 'a' });
+  log(`--- Log started, file: ${logFile} ---`);
+}
+
+export function log(msg: string): void {
+  if (!logStream) return;
+  logStream.write(`[${new Date().toISOString()}] ${msg}\n`);
+}
 
 /** Find a free TCP port by binding to port 0. */
 function getFreePort(): Promise<number> {
@@ -104,15 +126,21 @@ export async function startServer(resourcesPath: string): Promise<string> {
   });
 
   serverProcess.stdout?.on('data', (data: Buffer) => {
-    console.log(`[next] ${data.toString().trim()}`);
+    const msg = `[next:stdout] ${data.toString().trim()}`;
+    console.log(msg);
+    log(msg);
   });
 
   serverProcess.stderr?.on('data', (data: Buffer) => {
-    console.error(`[next] ${data.toString().trim()}`);
+    const msg = `[next:stderr] ${data.toString().trim()}`;
+    console.error(msg);
+    log(msg);
   });
 
   serverProcess.on('exit', (code) => {
-    console.log(`[next] server exited with code ${code}`);
+    const msg = `[next] server exited with code ${code}`;
+    console.log(msg);
+    log(msg);
     serverProcess = null;
   });
 
