@@ -83,6 +83,26 @@ Alternatif olarak aktarılabilir bir PFX sertifikası varsa
 Release iş akışı hiçbir imzalama yöntemi yoksa veya üretilen Authenticode imzası
 geçersizse yayınlamayı durdurur; imzasız güncelleme yayımlamaz.
 
+Kapalı kaynak MVP dağıtımında self-signed imzalama da desteklenir. Bunun için
+aynı PFX secrets'a ek olarak yalnız açık sertifikayı içeren
+`WINDOWS_CERTIFICATE_PUBLIC_BASE64` secret'ı tanımlanır. Workflow açık
+sertifikayı build runner'ın güven depolarına ekler, EXE'yi kalıcı PFX ile imzalar
+ve release'e şu güven paketini koyar:
+
+- `EKAP-Editor-Code-Signing.cer`
+- `Install-EKAPEditorCertificate.ps1`
+- `Uninstall-EKAPEditorCertificate.ps1`
+- `EKAP-Editor-SHA256.txt`
+
+Kullanıcı önce SHA1 parmak izini `EKAP-Editor-SHA256.txt` ile karşılaştırmalı,
+sonra sertifika ve kurulum script'i aynı klasördeyken script'i çalıştırmalıdır.
+Geçerli yayıncı sertifikasının SHA1 parmak izi
+`1E5D19112C6D86600107E9C05EE60021BF260A8E` değeridir ve kurulum/kaldırma
+script'leri yalnız bu sertifikayı kabul eder.
+Self-signed sertifika yalnız bu güven işleminin yapıldığı Windows hesaplarında
+doğrulanır. Genel SmartScreen itibarı sağlamaz ve sertifikaya güven vermek,
+sertifikanın özel anahtarıyla imzalanan tüm kodlara güvenmek anlamına gelir.
+
 Repository variable olarak `EKAP_WEB_URL` hosted HTTPS uygulama adresine
 ayarlanır. Boş bırakılırsa Electron yerel standalone paketi kullanır.
 

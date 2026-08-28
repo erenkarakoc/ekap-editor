@@ -65,14 +65,42 @@ jobs:
         env:
           ESIGNER_USERNAME: ${{ secrets.ESIGNER_USERNAME }}
           PFX_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          SELF_SIGNED_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_PUBLIC_BASE64 }}
         run: |
           if ($env:ESIGNER_USERNAME) {
             'method=esigner' >> $env:GITHUB_OUTPUT
+          } elseif ($env:PFX_CERTIFICATE -and $env:SELF_SIGNED_CERTIFICATE) {
+            'method=selfsigned' >> $env:GITHUB_OUTPUT
           } elseif ($env:PFX_CERTIFICATE) {
             'method=pfx' >> $env:GITHUB_OUTPUT
           } else {
             throw 'No Windows code-signing provider is configured. Unsigned releases are blocked.'
           }
+
+      - name: Trust self-signed certificate on build runner
+        if: steps.signing.outputs.method == 'selfsigned'
+        shell: pwsh
+        env:
+          PUBLIC_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_PUBLIC_BASE64 }}
+        run: |
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'EKAP-Editor-Code-Signing.cer'
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:PUBLIC_CERTIFICATE))
+          $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($certificatePath)
+          if ($certificate.Subject -ne 'CN=EKAP Editor') {
+            throw "Unexpected self-signed certificate subject: $($certificate.Subject)"
+          }
+          $codeSigningOid = '1.3.6.1.5.5.7.3.3'
+          $hasCodeSigningEku = $certificate.Extensions |
+            Where-Object { $_ -is [Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension] } |
+            ForEach-Object { $_.EnhancedKeyUsages } |
+            Where-Object Value -eq $codeSigningOid
+          if (-not $hasCodeSigningEku) {
+            throw 'The self-signed certificate is not valid for code signing.'
+          }
+          Import-Certificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
+          Import-Certificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\TrustedPublisher | Out-Null
+          "SELF_SIGNED_CERT_PATH=$certificatePath" >> $env:GITHUB_ENV
+          "SELF_SIGNED_CERT_THUMBPRINT=$($certificate.Thumbprint)" >> $env:GITHUB_ENV
 
       - name: Install SSL.com eSigner CKA
         if: steps.signing.outputs.method == 'esigner'
@@ -114,7 +142,7 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
 
       - name: Publish signed release with PFX certificate
-        if: steps.signing.outputs.method == 'pfx'
+        if: steps.signing.outputs.method == 'pfx' || steps.signing.outputs.method == 'selfsigned'
         run: npm run release
         working-directory: desktop
         env:
@@ -131,3 +159,28 @@ jobs:
           if ($signature.Status -ne 'Valid') {
             throw "Installer signature is not valid: $($signature.Status)"
           }
+
+      - name: Publish self-signed trust package
+        if: steps.signing.outputs.method == 'selfsigned'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          $version = (Get-Content desktop/package.json | ConvertFrom-Json).version
+          $certificateAsset = 'desktop/release/EKAP-Editor-Code-Signing.cer'
+          Copy-Item -LiteralPath $env:SELF_SIGNED_CERT_PATH -Destination $certificateAsset
+          $certificateHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $certificateAsset).Hash
+          $installer = Get-ChildItem desktop/release -Filter '*.exe' | Where-Object Name -NotMatch '__uninstaller' | Select-Object -First 1
+          $installerHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash
+          @(
+            "Sertifika parmak izi (SHA1): $env:SELF_SIGNED_CERT_THUMBPRINT"
+            "Sertifika SHA256: $certificateHash"
+            "$($installer.Name) SHA256: $installerHash"
+          ) | Set-Content desktop/release/EKAP-Editor-SHA256.txt
+          gh release upload "v$version" `
+            $certificateAsset `
+            desktop/scripts/Install-EKAPEditorCertificate.ps1 `
+            desktop/scripts/Uninstall-EKAPEditorCertificate.ps1 `
+            desktop/release/EKAP-Editor-SHA256.txt `
+            --repo erenkarakoc/ekap-editor-releases `
+            --clobber
