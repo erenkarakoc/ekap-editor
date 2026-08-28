@@ -77,7 +77,7 @@ jobs:
             throw 'No Windows code-signing provider is configured. Unsigned releases are blocked.'
           }
 
-      - name: Trust self-signed certificate on build runner
+      - name: Validate self-signed public certificate
         if: steps.signing.outputs.method == 'selfsigned'
         shell: pwsh
         env:
@@ -96,18 +96,6 @@ jobs:
             Where-Object Value -eq $codeSigningOid
           if (-not $hasCodeSigningEku) {
             throw 'The self-signed certificate is not valid for code signing.'
-          }
-          foreach ($storeName in @('Root', 'TrustedPublisher')) {
-            $store = [Security.Cryptography.X509Certificates.X509Store]::new(
-              $storeName,
-              [Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
-            )
-            try {
-              $store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-              $store.Add($certificate)
-            } finally {
-              $store.Close()
-            }
           }
           "SELF_SIGNED_CERT_PATH=$certificatePath" >> $env:GITHUB_ENV
           "SELF_SIGNED_CERT_THUMBPRINT=$($certificate.Thumbprint)" >> $env:GITHUB_ENV
@@ -162,11 +150,26 @@ jobs:
 
       - name: Verify Authenticode signatures
         shell: pwsh
+        env:
+          SIGNING_METHOD: ${{ steps.signing.outputs.method }}
         run: |
           $installer = Get-ChildItem desktop/release -Filter '*.exe' | Where-Object Name -NotMatch '__uninstaller' | Select-Object -First 1
           if (-not $installer) { throw 'Windows installer was not produced.' }
           $signature = Get-AuthenticodeSignature -LiteralPath $installer.FullName
-          if ($signature.Status -ne 'Valid') {
+          if ($env:SIGNING_METHOD -eq 'selfsigned') {
+            if (-not $signature.SignerCertificate) {
+              throw 'Installer does not contain an Authenticode signer certificate.'
+            }
+            if ($signature.SignatureType -ne 'Authenticode') {
+              throw "Unexpected installer signature type: $($signature.SignatureType)"
+            }
+            if ($signature.SignerCertificate.Thumbprint -ne $env:SELF_SIGNED_CERT_THUMBPRINT) {
+              throw "Installer was signed by an unexpected certificate: $($signature.SignerCertificate.Thumbprint)"
+            }
+            if ($signature.Status -in @('NotSigned', 'HashMismatch', 'NotSupported')) {
+              throw "Installer signature failed cryptographic validation: $($signature.Status)"
+            }
+          } elseif ($signature.Status -ne 'Valid') {
             throw "Installer signature is not valid: $($signature.Status)"
           }
 
