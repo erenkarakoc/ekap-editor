@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
-import { Search, Info, Settings2, FileSpreadsheet } from 'lucide-react';
+import { Search, Info, Settings2, FileSpreadsheet, Download, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Separator } from '@shared/components/ui/separator';
@@ -29,6 +30,7 @@ import { Kbd } from '@shared/components/ui/kbd';
 import { UploadPricesDialog } from '@features/editor/components/upload-prices-dialog';
 import type { PriceUpdate } from '@features/editor/lib/excel-parser';
 import type { SortKey, SortConfig } from '@features/editor/types';
+import { exportEkapDocumentToExcel } from '@features/editor/lib/excel-export';
 import Decimal from 'decimal.js';
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -59,6 +61,7 @@ const DEFAULT_VISIBLE_COLUMNS = [
 
 interface EditorViewProps {
   document: EkapDocument;
+  fileName: string;
   onUpdate: (doc: EkapDocument) => void;
   // View State (lifted up for persistence)
   searchQuery: string;
@@ -70,6 +73,7 @@ interface EditorViewProps {
 
 export function EditorView({
   document,
+  fileName,
   onUpdate,
   searchQuery,
   onSearchChange,
@@ -81,6 +85,7 @@ export function EditorView({
   const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_VISIBLE_COLUMNS);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -382,6 +387,19 @@ export function EditorView({
     [document, onUpdate],
   );
 
+  const handleExportToExcel = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      await exportEkapDocumentToExcel(document, fileName);
+      toast.success('Excel dosyası indirildi');
+    } catch (error) {
+      console.error('Excel export error:', error);
+      toast.error('Excel dosyası oluşturulamadı');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [document, fileName]);
+
   const handleSort = useCallback(
     (key: SortKey) => {
       onSortChange({
@@ -617,6 +635,20 @@ export function EditorView({
         </div>
 
         <div className="flex items-center justify-between gap-2 md:justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2"
+            onClick={handleExportToExcel}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            <span className="hidden sm:inline">Excel&apos;e Aktar</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"

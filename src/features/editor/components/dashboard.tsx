@@ -495,6 +495,7 @@ export default function Dashboard() {
               <EditorView
                 key={session.id}
                 document={session.document}
+                fileName={session.fileName}
                 onUpdate={handleDocumentUpdate}
                 isActive={session.id === activeTabId}
                 searchQuery={session.searchQuery}
