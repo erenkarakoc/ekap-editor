@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
-import { Search, Info, Settings2, FileSpreadsheet, Download, Loader2 } from 'lucide-react';
+import { Search, Info, Settings2, FileSpreadsheet, Download, Loader2, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -28,6 +28,7 @@ import { measureTextWidth } from '@shared/lib/measure-text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { Kbd } from '@shared/components/ui/kbd';
 import { UploadPricesDialog } from '@features/editor/components/upload-prices-dialog';
+import { BatchPriceUpdateDialog } from '@features/editor/components/batch-price-update-dialog';
 import type { PriceUpdate } from '@features/editor/lib/excel-parser';
 import type { SortKey, SortConfig } from '@features/editor/types';
 import { exportEkapDocumentToExcel } from '@features/editor/lib/excel-export';
@@ -85,6 +86,7 @@ export function EditorView({
   const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_VISIBLE_COLUMNS);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [batchUpdateDialogOpen, setBatchUpdateDialogOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -95,6 +97,7 @@ export function EditorView({
     if (!isActive) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Required to close Portal-based dialogs when tab switches
       setUploadDialogOpen(false);
+      setBatchUpdateDialogOpen(false);
       setShowInfo(false);
     }
   }, [isActive]);
@@ -387,6 +390,25 @@ export function EditorView({
     [document, onUpdate],
   );
 
+  const handleBatchPriceUpdate = useCallback(
+    (percentage: number, isIncrease: boolean) => {
+      let updatedDoc = document;
+      const multiplier = isIncrease ? (1 + percentage / 100) : (1 - percentage / 100);
+
+      let updatedCount = 0;
+      for (const item of document.items) {
+        if (!item.fiyatDecimal.isZero()) {
+          const newPrice = item.fiyatDecimal.times(multiplier);
+          updatedDoc = updateItemPrice(updatedDoc, item.index, newPrice);
+          updatedCount++;
+        }
+      }
+      onUpdate(updatedDoc);
+      toast.success(`${updatedCount} kalemin fiyatı %${percentage} ${isIncrease ? 'artırıldı' : 'azaltıldı'}`);
+    },
+    [document, onUpdate],
+  );
+
   const handleExportToExcel = useCallback(async () => {
     setIsExporting(true);
     try {
@@ -657,6 +679,15 @@ export function EditorView({
           >
             <FileSpreadsheet className="size-4" />
             <span className="hidden sm:inline">Fiyat Yükle</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2"
+            onClick={() => setBatchUpdateDialogOpen(true)}
+          >
+            <Calculator className="size-4" />
+            <span className="hidden sm:inline">Toplu Güncelle</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1108,6 +1139,14 @@ export function EditorView({
         onOpenChange={setUploadDialogOpen}
         document={document}
         onApply={handleApplyExcelPrices}
+      />
+
+      {/* --- Batch Price Update Dialog --- */}
+      <BatchPriceUpdateDialog
+        open={batchUpdateDialogOpen}
+        onOpenChange={setBatchUpdateDialogOpen}
+        document={document}
+        onApply={handleBatchPriceUpdate}
       />
     </div>
   );

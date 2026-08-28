@@ -1,26 +1,26 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from "@shared/lib/utils"
 
-import { cn } from '@shared/lib/utils';
-
-const kbdVariants = cva('font-mono text-[10px]', {
-  variants: {
-    variant: {
-      outline:
-        'bg-muted text-muted-foreground inline-flex h-5 items-center rounded border px-1.5 font-medium',
-      ghost: 'text-muted-foreground/60',
-    },
-  },
-  defaultVariants: {
-    variant: 'outline',
-  },
-});
-
-function Kbd({
-  className,
-  variant,
-  ...props
-}: React.ComponentProps<'kbd'> & VariantProps<typeof kbdVariants>) {
-  return <kbd className={cn(kbdVariants({ variant }), className)} {...props} />;
+function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
+  return (
+    <kbd
+      data-slot="kbd"
+      className={cn(
+        "pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-xs bg-muted px-1 font-sans text-[0.625rem] font-medium text-muted-foreground select-none in-data-[slot=tooltip-content]:bg-background/20 in-data-[slot=tooltip-content]:text-background dark:in-data-[slot=tooltip-content]:bg-background/10 [&_svg:not([class*='size-'])]:size-3",
+        className
+      )}
+      {...props}
+    />
+  )
 }
 
-export { Kbd, kbdVariants };
+function KbdGroup({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <kbd
+      data-slot="kbd-group"
+      className={cn("inline-flex items-center gap-1", className)}
+      {...props}
+    />
+  )
+}
+
+export { Kbd, KbdGroup }

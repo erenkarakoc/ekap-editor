@@ -2,11 +2,35 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater';
 
 export function initAutoUpdater(mainWindow: BrowserWindow): void {
+  let manualCheck = false;
+
+  ipcMain.handle('install-update', () => {
+    if (app.isPackaged) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+
+  ipcMain.handle('start-download', () => {
+    if (app.isPackaged) {
+      return autoUpdater.downloadUpdate();
+    }
+    return Promise.resolve();
+  });
+
+  ipcMain.handle('check-for-updates', () => {
+    if (app.isPackaged) {
+      manualCheck = true;
+      return autoUpdater.checkForUpdates();
+    } else {
+      mainWindow.webContents.send('update-status', { status: 'current' });
+      return Promise.resolve(null);
+    }
+  });
+
   if (!app.isPackaged) return;
 
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
-  let manualCheck = false;
 
   autoUpdater.on('checking-for-update', () => {
     console.log('Checking for updates...');
@@ -48,18 +72,7 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
     manualCheck = false;
   });
 
-  ipcMain.handle('install-update', () => {
-    autoUpdater.quitAndInstall();
-  });
 
-  ipcMain.handle('start-download', () => {
-    return autoUpdater.downloadUpdate();
-  });
-
-  ipcMain.handle('check-for-updates', () => {
-    manualCheck = true;
-    return autoUpdater.checkForUpdates();
-  });
 
   setTimeout(() => {
     autoUpdater.checkForUpdates().catch((err) => {

@@ -13,7 +13,7 @@ as $$
 $$;
 
 comment on function public.admin_mi() is
-  'Oturumdaki app_metadata.role degeri admin ise true doner.';
+  'Oturumdaki app_metadata.role değeri admin ise true döner.';
 
 revoke all on function public.admin_mi() from public, anon;
 grant execute on function public.admin_mi() to authenticated;
@@ -34,7 +34,7 @@ as $$
 $$;
 
 comment on function public.katalog_sahibi_mi(uuid) is
-  'Veri sahibinin Auth app_metadata rolunun admin olup olmadigini denetler.';
+  'Veri sahibinin Auth app_metadata rolünün admin olup olmadığını denetler.';
 
 revoke all on function public.katalog_sahibi_mi(uuid) from public, anon;
 grant execute on function public.katalog_sahibi_mi(uuid) to authenticated;
@@ -48,7 +48,7 @@ create table public.kullanici_profilleri (
 );
 
 comment on table public.kullanici_profilleri is
-  'Auth kullanicilarinin uygulamada gorunen temel profil bilgileri.';
+  'Auth kullanıcılarının uygulamada görünen temel profil bilgileri.';
 
 create table public.uyelik_paketleri (
   id uuid primary key default gen_random_uuid(),
@@ -65,7 +65,7 @@ create table public.uyelik_paketleri (
 );
 
 comment on table public.uyelik_paketleri is
-  'Ucretsiz, Standart ve Pro uyelik paketlerinin duzenlenebilir tanimlari.';
+  'Ücretsiz, Standart ve Pro üyelik paketlerinin düzenlenebilir tanımları.';
 
 create table public.paket_donemleri (
   id uuid primary key default gen_random_uuid(),
@@ -85,7 +85,7 @@ create table public.paket_donemleri (
 );
 
 comment on table public.paket_donemleri is
-  'Uyelik paketlerinin aylik ve yillik fiyatlari; admin ayarlayana kadar pasiftir.';
+  'Üyelik paketlerinin aylık ve yıllık fiyatları; admin ayarlayana kadar pasiftir.';
 
 create table public.ozellikler (
   kod text primary key,
@@ -100,7 +100,7 @@ create table public.ozellikler (
 );
 
 comment on table public.ozellikler is
-  'Paketlere atanabilen poz arama, fiyat, gecmis, analiz ve disa aktarma yetenekleri.';
+  'Paketlere atanabilen poz arama, fiyat, geçmiş, analiz ve dışa aktarma yetenekleri.';
 
 create table public.paket_ozellikleri (
   paket_id uuid not null references public.uyelik_paketleri(id) on delete cascade,
@@ -110,7 +110,7 @@ create table public.paket_ozellikleri (
 );
 
 comment on table public.paket_ozellikleri is
-  'Adminin her paket icin actigi ozellikler. Baslangicta bos ve kilitlidir.';
+  'Adminin her paket için açtığı özellikler. Başlangıçta boş ve kilitlidir.';
 
 create table public.banka_hesaplari (
   id uuid primary key default gen_random_uuid(),
@@ -127,7 +127,7 @@ create table public.banka_hesaplari (
 );
 
 comment on table public.banka_hesaplari is
-  'Kullanicilara odeme ekraninda gosterilecek admin yonetimli IBAN hesaplari.';
+  'Kullanıcılara ödeme ekranında gösterilecek admin yönetimli IBAN hesapları.';
 
 create table public.odeme_bildirimleri (
   id uuid primary key default gen_random_uuid(),
@@ -156,7 +156,7 @@ create table public.odeme_bildirimleri (
 );
 
 comment on table public.odeme_bildirimleri is
-  'Kullanicinin yukledigi dekont ve adminin onay/red kararinin denetim kaydi.';
+  'Kullanıcının yüklediği dekont ve adminin onay/red kararının denetim kaydı.';
 
 create table public.abonelikler (
   id uuid primary key default gen_random_uuid(),
@@ -181,7 +181,7 @@ create table public.abonelikler (
 );
 
 comment on table public.abonelikler is
-  'Kullanicilarin tarih aralikli paket erisimleri; ucretsiz paket suresiz olabilir.';
+  'Kullanıcıların tarih aralıklı paket erişimleri; ücretsiz paket süresiz olabilir.';
 
 create table public.yonetim_islem_kayitlari (
   id bigint generated always as identity primary key,
@@ -195,13 +195,13 @@ create table public.yonetim_islem_kayitlari (
 );
 
 comment on table public.yonetim_islem_kayitlari is
-  'Adminin odeme, uyelik, paket ve aktarim islemlerine ait degistirilemez audit kaydi.';
+  'Adminin ödeme, üyelik, paket ve aktarım işlemlerine ait değiştirilemez audit kaydı.';
 
 insert into public.uyelik_paketleri(kod, ad, aciklama, seviye, ucretsiz_mi)
 values
-  ('ucretsiz', 'Ucretsiz', 'Temel hesap. Veri ozellikleri admin tarafindan acilir.', 0, true),
-  ('standart', 'Standart', 'Aylik veya yillik Standart uyelik.', 10, false),
-  ('pro', 'Pro', 'Aylik veya yillik tum profesyonel veri yetenekleri icin hazir paket.', 20, false)
+  ('ucretsiz', 'Ücretsiz', 'Temel hesap. Veri özellikleri admin tarafından açılır.', 0, true),
+  ('standart', 'Standart', 'Aylık veya yıllık Standart üyelik.', 10, false),
+  ('pro', 'Pro', 'Aylık veya yıllık tüm profesyonel veri yetenekleri için hazır paket.', 20, false)
 on conflict (kod) do update
 set ad = excluded.ad,
     aciklama = excluded.aciklama,
@@ -217,11 +217,11 @@ on conflict (paket_id, donem) do nothing;
 
 insert into public.ozellikler(kod, ad, aciklama, kategori, sira_no)
 values
-  ('poz_temel', 'Poz temel bilgileri', 'Poz numarasi, tanim, birim, kurum, kitap, fasikul ve donem.', 'Poz verisi', 10),
-  ('poz_fiyatlar', 'Poz fiyatlari', 'Birim, montaj ve demontaj fiyatlarini goruntuleme.', 'Poz verisi', 20),
-  ('poz_gecmisi', 'Fiyat ve surum gecmisi', 'Pozun ay/yil bazli fiyat ve surum degisimlerini goruntuleme.', 'Poz verisi', 30),
-  ('poz_analizleri', 'Poz analizleri', 'Analiz satirlari, tarifler, endeksler ve gider notlari.', 'Poz verisi', 40),
-  ('poz_disa_aktarim', 'Poz disa aktarma', 'Izin verilen poz verisini Excel/CSV olarak indirme.', 'Poz verisi', 50)
+  ('poz_temel', 'Poz temel bilgileri', 'Poz numarası, tanım, birim, kurum, kitap, fasikül ve dönem.', 'Poz verisi', 10),
+  ('poz_fiyatlar', 'Poz fiyatları', 'Birim, montaj ve demontaj fiyatlarını görüntüleme.', 'Poz verisi', 20),
+  ('poz_gecmisi', 'Fiyat ve sürüm geçmişi', 'Pozun ay/yıl bazlı fiyat ve sürüm değişimlerini görüntüleme.', 'Poz verisi', 30),
+  ('poz_analizleri', 'Poz analizleri', 'Analiz satırları, tarifler, endeksler ve gider notları.', 'Poz verisi', 40),
+  ('poz_disa_aktarim', 'Poz dışa aktarma', 'İzin verilen poz verisini Excel/CSV olarak indirme.', 'Poz verisi', 50)
 on conflict (kod) do update
 set ad = excluded.ad,
     aciklama = excluded.aciklama,
@@ -318,7 +318,7 @@ as $$
 $$;
 
 comment on function public.ozellige_erisim_var_mi(text) is
-  'Admin veya aktif abonelik paketinde ilgili ozellik bulunan kullanici icin true doner.';
+  'Admin veya aktif abonelik paketinde ilgili özellik bulunan kullanıcı için true döner.';
 
 revoke all on function public.ozellige_erisim_var_mi(text) from public, anon;
 grant execute on function public.ozellige_erisim_var_mi(text) to authenticated;
@@ -470,15 +470,15 @@ declare
   v_donem public.paket_donemleri%rowtype;
   v_id uuid;
 begin
-  if v_user is null then raise exception 'Oturum acmaniz gerekiyor'; end if;
+  if v_user is null then raise exception 'Oturum açmanız gerekiyor'; end if;
   select * into v_donem from public.paket_donemleri
   where id = p_paket_donemi_id and aktif_mi and fiyat is not null;
-  if not found then raise exception 'Secilen paket donemi satis icin aktif degil'; end if;
+  if not found then raise exception 'Seçilen paket dönemi satış için aktif değil'; end if;
   if not exists (select 1 from public.banka_hesaplari where id = p_banka_hesabi_id and aktif_mi) then
-    raise exception 'Secilen banka hesabi aktif degil';
+    raise exception 'Seçilen banka hesabı aktif değil';
   end if;
   if p_dekont_yolu not like v_user::text || '/%' then
-    raise exception 'Dekont yolu kullanici klasoruyle baslamalidir';
+    raise exception 'Dekont yolu kullanıcı klasörüyle başlamalıdır';
   end if;
   insert into public.odeme_bildirimleri(
     kullanici_id, paket_donemi_id, banka_hesabi_id, tutar, para_birimi,
@@ -511,8 +511,8 @@ begin
   join public.paket_donemleri pd on pd.id = ob.paket_donemi_id
   where ob.id = p_odeme_id
   for update of ob;
-  if not found then raise exception 'Odeme bildirimi bulunamadi'; end if;
-  if v_odeme.durum <> 'bekliyor' then raise exception 'Odeme daha once incelenmis'; end if;
+  if not found then raise exception 'Ödeme bildirimi bulunamadı'; end if;
+  if v_odeme.durum <> 'bekliyor' then raise exception 'Ödeme daha önce incelenmiş'; end if;
 
   select greatest(now(), max(a.bitis_zamani)) into v_baslangic
   from public.abonelikler a
@@ -557,12 +557,12 @@ as $$
 declare v_admin uuid := auth.uid();
 begin
   if not public.admin_mi() then raise exception 'Admin yetkisi gerekiyor'; end if;
-  if btrim(coalesce(p_admin_notu, '')) = '' then raise exception 'Red gerekcesi zorunludur'; end if;
+  if btrim(coalesce(p_admin_notu, '')) = '' then raise exception 'Red gerekçesi zorunludur'; end if;
   update public.odeme_bildirimleri
   set durum = 'reddedildi', admin_notu = btrim(p_admin_notu),
       inceleyen_admin_id = v_admin, incelenme_zamani = now(), guncellenme_zamani = now()
   where id = p_odeme_id and durum = 'bekliyor';
-  if not found then raise exception 'Bekleyen odeme bildirimi bulunamadi'; end if;
+  if not found then raise exception 'Bekleyen ödeme bildirimi bulunamadı'; end if;
   insert into public.yonetim_islem_kayitlari(admin_id, islem, hedef_turu, hedef_id)
   values (v_admin, 'odeme_reddedildi', 'odeme_bildirimi', p_odeme_id::text);
 end;
@@ -584,7 +584,7 @@ declare
   v_dis_id text;
 begin
   if not public.admin_mi() then raise exception 'Admin yetkisi gerekiyor'; end if;
-  if jsonb_typeof(p_veri) <> 'object' then raise exception 'Kaynak verisi nesne olmalidir'; end if;
+  if jsonb_typeof(p_veri) <> 'object' then raise exception 'Kaynak verisi nesne olmalıdır'; end if;
 
   insert into public.kurumlar(sahip_id, kod, ad, resmi_ad, resmi_url)
   values (v_admin, upper(btrim(p_veri->>'kurum_kodu')), btrim(p_veri->>'kurum_adi'),
@@ -685,11 +685,11 @@ declare
 begin
   if not public.admin_mi() then raise exception 'Admin yetkisi gerekiyor'; end if;
   select * into v_yayin from public.yayinlar where id = p_yayin_id and sahip_id = v_admin;
-  if not found then raise exception 'Yayin bulunamadi'; end if;
+  if not found then raise exception 'Yayın bulunamadı'; end if;
   if p_fasikul_id is not null and not exists (
     select 1 from public.fasikuller where id = p_fasikul_id and sahip_id = v_admin
       and kitap_ailesi_id = v_yayin.kitap_ailesi_id
-  ) then raise exception 'Fasikul yayin kitabi ile uyusmuyor'; end if;
+  ) then raise exception 'Fasikül yayın kitabı ile uyuşmuyor'; end if;
 
   select id into v_belge from public.belgeler
   where sahip_id = v_admin and kaynak_url = p_belge_url
@@ -759,14 +759,14 @@ declare
   v_fiyat_sayisi integer := 0;
 begin
   if not public.admin_mi() then raise exception 'Admin yetkisi gerekiyor'; end if;
-  if jsonb_typeof(p_satirlar) <> 'array' then raise exception 'Satirlar dizi olmalidir'; end if;
+  if jsonb_typeof(p_satirlar) <> 'array' then raise exception 'Satırlar dizi olmalıdır'; end if;
   if jsonb_array_length(p_satirlar) < 1 or jsonb_array_length(p_satirlar) > 500 then
-    raise exception 'Her istekte 1 ile 500 satir gonderilmelidir';
+    raise exception 'Her istekte 1 ile 500 satır gönderilmelidir';
   end if;
 
   select * into v_run from public.aktarim_calismalari
   where id = p_aktarim_id and sahip_id = v_admin for update;
-  if not found or v_run.durum <> 'running' then raise exception 'Aktif aktarim bulunamadi'; end if;
+  if not found or v_run.durum <> 'running' then raise exception 'Aktif aktarım bulunamadı'; end if;
   select * into v_yayin from public.yayinlar where id = v_run.yayin_id and sahip_id = v_admin;
   v_belge_id := (v_run.parametreler->>'source_document_id')::uuid;
   v_fasikul_id := nullif(v_run.parametreler->>'fasikul_id', '')::uuid;
@@ -780,13 +780,13 @@ begin
     v_birim := nullif(btrim(v_row->>'unit'), '');
     v_sayfa := greatest(coalesce(nullif(v_row->>'page', '')::integer, 1), 1);
     v_satir := nullif(v_row->>'source_row', '')::integer;
-    if v_kod = '' or v_tanim = '' then raise exception 'Poz ve aciklama zorunludur'; end if;
+    if v_kod = '' or v_tanim = '' then raise exception 'Poz ve açıklama zorunludur'; end if;
     if exists (
       select 1 from public.poz_surumleri ps
       join public.pozlar p on p.id = ps.poz_id and p.sahip_id = ps.sahip_id
       where ps.sahip_id = v_admin and ps.yayin_id = v_yayin.id
         and p.kod_normalize = upper(regexp_replace(v_kod, '\s+', '', 'g'))
-    ) then raise exception 'Bu yayinda poz zaten var: %', v_kod; end if;
+    ) then raise exception 'Bu yayında poz zaten var: %', v_kod; end if;
 
     insert into private.ham_satirlar(
       sahip_id, aktarim_id, yayin_id, yayin_belgesi_id, belge_id,
@@ -876,8 +876,8 @@ begin
   if not public.admin_mi() then raise exception 'Admin yetkisi gerekiyor'; end if;
   select * into v_run from public.aktarim_calismalari
   where id = p_aktarim_id and sahip_id = v_admin for update;
-  if not found or v_run.durum <> 'running' then raise exception 'Aktif aktarim bulunamadi'; end if;
-  if v_run.islenen_surum_sayisi < 1 then raise exception 'Bos aktarim tamamlanamaz'; end if;
+  if not found or v_run.durum <> 'running' then raise exception 'Aktif aktarım bulunamadı'; end if;
+  if v_run.islenen_surum_sayisi < 1 then raise exception 'Boş aktarım tamamlanamaz'; end if;
   update public.aktarim_calismalari
   set durum = 'complete', tamamlanma_zamani = now(), guncellenme_zamani = now()
   where id = p_aktarim_id;
@@ -890,7 +890,7 @@ $$;
 
 create or replace function public.admin_poz_aktarimini_iptal_et(
   p_aktarim_id uuid,
-  p_gerekce text default 'Admin tarafindan iptal edildi'
+  p_gerekce text default 'Admin tarafından iptal edildi'
 )
 returns void
 language plpgsql
@@ -904,7 +904,7 @@ begin
   if not exists (
     select 1 from public.aktarim_calismalari
     where id = p_aktarim_id and sahip_id = v_admin and durum in ('running', 'failed', 'needs_review')
-  ) then raise exception 'Iptal edilebilir aktarim bulunamadi'; end if;
+  ) then raise exception 'İptal edilebilir aktarım bulunamadı'; end if;
 
   delete from public.fiyatlar where sahip_id = v_admin and aktarim_id = p_aktarim_id;
   delete from public.tarifler where sahip_id = v_admin and aktarim_id = p_aktarim_id;

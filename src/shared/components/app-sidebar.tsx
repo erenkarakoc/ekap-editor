@@ -107,7 +107,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 <>
                   <span className="flex-1 truncate">{tool.label}</span>
                   {tool.shortcut && (
-                    <Kbd variant="ghost" className="text-sidebar-foreground/40 hidden lg:inline">
+                    <Kbd className="text-sidebar-foreground/40 hidden lg:inline">
                       {tool.shortcut}
                     </Kbd>
                   )}
@@ -146,7 +146,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             <>
               <PanelLeftClose className="size-4 shrink-0" />
               <span className="flex-1 truncate text-left">Daralt</span>
-              <Kbd variant="ghost" className="text-sidebar-foreground/40">
+              <Kbd className="text-sidebar-foreground/40">
                 Ctrl+B
               </Kbd>
             </>
