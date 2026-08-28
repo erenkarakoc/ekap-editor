@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_run:
-    workflows: ['Auto Tag']
-    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -14,7 +11,6 @@ permissions:
 
 jobs:
   release-windows:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: windows-latest
     environment: production
 
@@ -23,11 +19,9 @@ jobs:
       ESIGNER_MASTER_KEY: C:\Users\runneradmin\eSignerCKA\master.key
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
