@@ -9,6 +9,7 @@ jobs:
   auto-tag:
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: write
 
     steps:
@@ -35,3 +36,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "v${{ steps.version.outputs.value }}"
           git push origin "v${{ steps.version.outputs.value }}"
+
+      - name: Dispatch signed release
+        if: steps.tag_check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref "v${{ steps.version.outputs.value }}"
