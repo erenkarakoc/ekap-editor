@@ -50,7 +50,6 @@ export function UploadPricesDialog({
   onApply,
 }: UploadPricesDialogProps) {
   const [step, setStep] = useState<Step>('upload');
-  const [file, setFile] = useState<File | null>(null);
   const [parsedExcel, setParsedExcel] = useState<ParsedExcel | null>(null);
   const [matchField, setMatchField] = useState<MatchField>('siraNo');
   const [keyColumnIndex, setKeyColumnIndex] = useState<number>(0);
@@ -64,7 +63,6 @@ export function UploadPricesDialog({
 
   const resetState = useCallback(() => {
     setStep('upload');
-    setFile(null);
     setParsedExcel(null);
     setMatchField('siraNo');
     setKeyColumnIndex(0);
@@ -95,7 +93,6 @@ export function UploadPricesDialog({
         setIsLoading(false);
         return;
       }
-      setFile(selectedFile);
       setParsedExcel(parsed);
       setStep('column-mapping');
     } catch (err) {
@@ -181,7 +178,6 @@ export function UploadPricesDialog({
   const handleBack = useCallback(() => {
     if (step === 'column-mapping') {
       setStep('upload');
-      setFile(null);
       setParsedExcel(null);
     } else if (step === 'preview') {
       setStep('column-mapping');

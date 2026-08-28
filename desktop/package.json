@@ -1,6 +1,6 @@
 {
   "name": "ekap-editor-desktop",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "engines": {
     "node": ">=24"
@@ -15,11 +15,15 @@
     "compile": "tsc",
     "build:nextjs": "node scripts/build-nextjs.mjs",
     "build": "npm run build:nextjs && tsc && electron-builder --config electron-builder.yml",
-    "release": "npm run build:nextjs && tsc && electron-builder --config electron-builder.yml --publish always",
+    "release": "npm run build:nextjs && tsc && electron-builder --config electron-builder.release.yml --publish always",
+    "release:esigner": "npm run build:nextjs && tsc && electron-builder --config electron-builder.esigner.yml --publish always",
     "start": "electron ."
   },
   "dependencies": {
-    "electron-updater": "^6.3.0"
+    "electron-updater": "6.8.9"
+  },
+  "overrides": {
+    "js-yaml": "4.3.1"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",

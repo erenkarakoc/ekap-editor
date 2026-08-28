@@ -6,9 +6,11 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
 
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
+  let manualCheck = false;
 
   autoUpdater.on('checking-for-update', () => {
     console.log('Checking for updates...');
+    if (manualCheck) mainWindow.webContents.send('update-status', { status: 'checking' });
   });
 
   autoUpdater.on('update-available', (info: UpdateInfo) => {
@@ -17,6 +19,7 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
       ? info.releaseNotes.map((n) => n.note ?? '').join('\n\n')
       : (info.releaseNotes ?? null);
     mainWindow.webContents.send('update-available', { version: info.version, releaseNotes: notes });
+    manualCheck = false;
   });
 
   autoUpdater.on('download-progress', (progress: ProgressInfo) => {
@@ -25,6 +28,8 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
 
   autoUpdater.on('update-not-available', () => {
     console.log('No updates available.');
+    if (manualCheck) mainWindow.webContents.send('update-status', { status: 'current' });
+    manualCheck = false;
   });
 
   autoUpdater.on('update-downloaded', () => {
@@ -34,6 +39,13 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
 
   autoUpdater.on('error', (err) => {
     console.error('Auto-updater error:', err);
+    if (manualCheck) {
+      mainWindow.webContents.send('update-status', {
+        status: 'error',
+        message: 'Güncelleme denetlenemedi. Lütfen daha sonra tekrar deneyin.',
+      });
+    }
+    manualCheck = false;
   });
 
   ipcMain.handle('install-update', () => {
@@ -41,7 +53,12 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
   });
 
   ipcMain.handle('start-download', () => {
-    autoUpdater.downloadUpdate();
+    return autoUpdater.downloadUpdate();
+  });
+
+  ipcMain.handle('check-for-updates', () => {
+    manualCheck = true;
+    return autoUpdater.checkForUpdates();
   });
 
   setTimeout(() => {

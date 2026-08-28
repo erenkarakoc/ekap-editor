@@ -38,6 +38,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeListener('update-downloaded', callback);
     };
   },
+  onUpdateStatus: (
+    callback: (info: { status: 'checking' | 'current' | 'error'; message?: string }) => void,
+  ) => {
+    const handler = (
+      _: Electron.IpcRendererEvent,
+      info: { status: 'checking' | 'current' | 'error'; message?: string },
+    ) => callback(info);
+    ipcRenderer.on('update-status', handler);
+    return () => ipcRenderer.removeListener('update-status', handler);
+  },
   installUpdate: () => ipcRenderer.invoke('install-update'),
   startDownload: () => ipcRenderer.invoke('start-download'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
 });

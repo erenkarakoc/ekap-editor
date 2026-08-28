@@ -36,19 +36,25 @@ export function UpdateDialog({
         </DialogHeader>
 
         {updateInfo?.releaseNotes && (
-          <div
-            className="release-notes bg-muted/40 max-h-48 overflow-y-auto rounded border p-3 text-sm"
-            dangerouslySetInnerHTML={{ __html: updateInfo.releaseNotes }}
-          />
+          <div className="bg-muted/40 max-h-48 overflow-y-auto rounded border p-3 text-sm whitespace-pre-wrap">
+            {updateInfo.releaseNotes.replace(/<[^>]*>/g, '')}
+          </div>
         )}
 
         {updateReady ? (
           <p className="text-muted-foreground text-sm">İndirme tamamlandı.</p>
         ) : downloadPercent >= 0 ? (
           <div className="space-y-1">
-            <div className="bg-muted h-1.5 w-full rounded-full">
+            <div
+              className="bg-muted h-1.5 w-full rounded-full"
+              role="progressbar"
+              aria-label="Güncelleme indirme ilerlemesi"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.max(0, downloadPercent)}
+            >
               <div
-                className="bg-primary h-1.5 rounded-full transition-all"
+                className="bg-primary h-1.5 rounded-full transition-all motion-reduce:transition-none"
                 style={{ width: `${Math.max(0, downloadPercent)}%` }}
               />
             </div>

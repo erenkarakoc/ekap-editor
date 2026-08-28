@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { Plus, Search, FileSpreadsheet } from 'lucide-react';
-import Decimal from 'decimal.js';
 
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';

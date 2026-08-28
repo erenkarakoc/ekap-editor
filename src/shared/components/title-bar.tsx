@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CircleFadingArrowUp, LogOut, UserIcon, Moon, Sun, Minus, X } from 'lucide-react';
+import {
+  CircleFadingArrowUp,
+  LogOut,
+  UserIcon,
+  Moon,
+  Sun,
+  Minus,
+  X,
+  RefreshCw,
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
 
 import { Button } from '@shared/components/ui/button';
 import {
@@ -29,8 +39,12 @@ declare global {
       ) => () => void;
       onUpdateProgress: (callback: (info: { percent: number }) => void) => () => void;
       onUpdateDownloaded: (callback: () => void) => () => void;
+      onUpdateStatus: (
+        callback: (info: { status: 'checking' | 'current' | 'error'; message?: string }) => void,
+      ) => () => void;
       installUpdate: () => Promise<void>;
       startDownload: () => Promise<void>;
+      checkForUpdates: () => Promise<void>;
     };
   }
 }
@@ -87,8 +101,10 @@ export function TitleBar({ title }: TitleBarProps) {
   useEffect(() => {
     if (!window.electronAPI) return;
 
-    setIsElectron(true);
-    window.electronAPI.windowIsMaximized().then(setIsMaximized);
+    window.electronAPI.windowIsMaximized().then((maximized) => {
+      setIsElectron(true);
+      setIsMaximized(maximized);
+    });
     const cleanupMaximize = window.electronAPI.onMaximizeChange(setIsMaximized);
     const cleanupAvail = window.electronAPI.onUpdateAvailable((info) => {
       setUpdateInfo(info);
@@ -101,11 +117,17 @@ export function TitleBar({ title }: TitleBarProps) {
       setUpdateReady(true);
       setShowUpdateDialog(true);
     });
+    const cleanupStatus = window.electronAPI.onUpdateStatus(({ status, message }) => {
+      if (status === 'checking') toast.info('Güncellemeler denetleniyor…');
+      if (status === 'current') toast.success('EKAP Editör güncel.');
+      if (status === 'error') toast.error(message ?? 'Güncelleme denetlenemedi.');
+    });
     return () => {
       cleanupMaximize();
       cleanupAvail();
       cleanupProgress();
       cleanupDownloaded();
+      cleanupStatus();
     };
   }, []);
 
@@ -136,6 +158,7 @@ export function TitleBar({ title }: TitleBarProps) {
               variant="ghost"
               size="icon"
               className="relative size-7 cursor-pointer"
+              aria-label="Hazır güncellemeyi görüntüle"
               onClick={() => setShowUpdateDialog(true)}
             >
               <CircleFadingArrowUp className="size-3.5" />
@@ -155,7 +178,12 @@ export function TitleBar({ title }: TitleBarProps) {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-7 cursor-pointer">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 cursor-pointer"
+                  aria-label="Kullanıcı menüsünü aç"
+                >
                   <UserIcon className="size-3.5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -166,6 +194,15 @@ export function TitleBar({ title }: TitleBarProps) {
                     Profilim
                   </Link>
                 </DropdownMenuItem>
+                {isElectron && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => window.electronAPI?.checkForUpdates()}
+                  >
+                    <RefreshCw className="mr-2 size-4" />
+                    Güncellemeleri Denetle
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem className="cursor-pointer" onClick={() => signOut()}>
                   <LogOut className="mr-2 size-4" />
                   Çıkış Yap
@@ -195,6 +232,7 @@ export function TitleBar({ title }: TitleBarProps) {
               variant="ghost"
               size="icon"
               className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
+              aria-label="Pencereyi küçült"
               onClick={() => window.electronAPI?.windowMinimize()}
             >
               <Minus className="size-4" />
@@ -203,6 +241,7 @@ export function TitleBar({ title }: TitleBarProps) {
               variant="ghost"
               size="icon"
               className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
+              aria-label={isMaximized ? 'Pencereyi önceki boyutuna getir' : 'Pencereyi büyüt'}
               onClick={() => window.electronAPI?.windowMaximize()}
             >
               {isMaximized ? (
@@ -215,6 +254,7 @@ export function TitleBar({ title }: TitleBarProps) {
               variant="ghost"
               size="icon"
               className="h-full w-10 cursor-pointer rounded-none border-none shadow-none hover:bg-red-500 hover:text-white"
+              aria-label="Pencereyi kapat"
               onClick={() => window.electronAPI?.windowClose()}
             >
               <X className="size-4" />

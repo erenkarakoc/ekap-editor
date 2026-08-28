@@ -1,16 +1,22 @@
-name: Release
+name: Signed Windows Release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  release:
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+  release-windows:
+    runs-on: windows-latest
+    environment: production
+
+    env:
+      ESIGNER_INSTALL_DIR: C:\Users\runneradmin\eSignerCKA
+      ESIGNER_MASTER_KEY: C:\Users\runneradmin\eSignerCKA\master.key
 
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
 
       - name: Install root dependencies
         run: npm ci
@@ -26,15 +33,95 @@ jobs:
         run: npm ci
         working-directory: desktop
 
-      - name: Create .env file
-        shell: bash
+      - name: Create public build environment
+        shell: pwsh
+        env:
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" > .env
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
-          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> .env
+          if (-not $env:SUPABASE_URL -or -not $env:SUPABASE_PUBLISHABLE_KEY) {
+            throw 'Supabase public build secrets are missing.'
+          }
+          "NEXT_PUBLIC_SUPABASE_URL=$env:SUPABASE_URL" | Set-Content .env.local
+          "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$env:SUPABASE_PUBLISHABLE_KEY" | Add-Content .env.local
 
-      - name: Release
+      - name: Configure hosted web URL
+        shell: pwsh
+        env:
+          EKAP_WEB_URL: ${{ vars.EKAP_WEB_URL }}
+        run: |
+          $config = @{ webUrl = if ($env:EKAP_WEB_URL) { $env:EKAP_WEB_URL } else { '' } }
+          $config | ConvertTo-Json | Set-Content desktop/app-config.json
+
+      - name: Select signing provider
+        id: signing
+        shell: pwsh
+        env:
+          ESIGNER_USERNAME: ${{ secrets.ESIGNER_USERNAME }}
+          PFX_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+        run: |
+          if ($env:ESIGNER_USERNAME) {
+            'method=esigner' >> $env:GITHUB_OUTPUT
+          } elseif ($env:PFX_CERTIFICATE) {
+            'method=pfx' >> $env:GITHUB_OUTPUT
+          } else {
+            throw 'No Windows code-signing provider is configured. Unsigned releases are blocked.'
+          }
+
+      - name: Install SSL.com eSigner CKA
+        if: steps.signing.outputs.method == 'esigner'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -OutFile eSigner_CKA_Setup.zip 'https://github.com/SSLcom/eSignerCKA/releases/download/v1.0.8/SSL.COM-eSigner-CKA_1.0.8.zip'
+          Expand-Archive -Force eSigner_CKA_Setup.zip
+          Move-Item -Destination eSigner_CKA_Installer.exe -Path 'eSigner_CKA_*\*.exe'
+          New-Item -ItemType Directory -Force -Path $env:ESIGNER_INSTALL_DIR | Out-Null
+          Start-Process .\eSigner_CKA_Installer.exe -ArgumentList "/CURRENTUSER /VERYSILENT /SUPPRESSMSGBOXES /DIR=`"$env:ESIGNER_INSTALL_DIR`"" -Wait
+          Start-Process .\setup\vc_redist.x86.exe -ArgumentList '/install /q' -Wait
+          Start-Process .\setup\vc_redist.x64.exe -ArgumentList '/install /q' -Wait
+          & "$env:ESIGNER_INSTALL_DIR\RegisterKSP.exe" | Out-Null
+          & "$env:ESIGNER_INSTALL_DIR\eSignerCSP.Config.exe" | Out-Null
+
+      - name: Load SSL.com signing certificate
+        if: steps.signing.outputs.method == 'esigner'
+        shell: pwsh
+        env:
+          ESIGNER_MODE: ${{ secrets.ESIGNER_MODE }}
+          ESIGNER_USERNAME: ${{ secrets.ESIGNER_USERNAME }}
+          ESIGNER_PASSWORD: ${{ secrets.ESIGNER_PASSWORD }}
+          ESIGNER_TOTP_SECRET: ${{ secrets.ESIGNER_TOTP_SECRET }}
+        run: |
+          if (-not $env:ESIGNER_MODE -or -not $env:ESIGNER_PASSWORD -or -not $env:ESIGNER_TOTP_SECRET) {
+            throw 'SSL.com eSigner secrets are incomplete.'
+          }
+          & "$env:ESIGNER_INSTALL_DIR\eSignerCKATool.exe" config -mode $env:ESIGNER_MODE -user $env:ESIGNER_USERNAME -pass $env:ESIGNER_PASSWORD -totp $env:ESIGNER_TOTP_SECRET -key $env:ESIGNER_MASTER_KEY -r
+          & "$env:ESIGNER_INSTALL_DIR\eSignerCKATool.exe" unload
+          & "$env:ESIGNER_INSTALL_DIR\eSignerCKATool.exe" load
+          $certificate = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object Subject -Match 'Esigner' | Select-Object -First 1
+          if (-not $certificate) { throw 'SSL.com eSigner certificate was not loaded.' }
+
+      - name: Publish signed release with SSL.com eSigner
+        if: steps.signing.outputs.method == 'esigner'
+        run: npm run release:esigner
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+
+      - name: Publish signed release with PFX certificate
+        if: steps.signing.outputs.method == 'pfx'
         run: npm run release
         working-directory: desktop
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          WIN_CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+
+      - name: Verify Authenticode signatures
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem desktop/release -Filter '*.exe' | Where-Object Name -NotMatch '__uninstaller' | Select-Object -First 1
+          if (-not $installer) { throw 'Windows installer was not produced.' }
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer.FullName
+          if ($signature.Status -ne 'Valid') {
+            throw "Installer signature is not valid: $($signature.Status)"
+          }

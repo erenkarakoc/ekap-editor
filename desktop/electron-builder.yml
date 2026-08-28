@@ -11,6 +11,8 @@ files:
 afterPack: ./scripts/after-pack.cjs
 
 extraResources:
+  - from: app-config.json
+    to: app-config.json
   - from: nextjs-standalone
     to: nextjs-standalone
     filter:
@@ -27,6 +29,7 @@ win:
     - target: nsis
       arch: [x64]
   icon: ../public/assets/images/favicon.ico
+  verifyUpdateCodeSignature: true
 
 nsis:
   oneClick: false

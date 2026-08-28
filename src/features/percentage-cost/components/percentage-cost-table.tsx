@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import Decimal from 'decimal.js';
 import { Trash2, ChevronsLeftRight } from 'lucide-react';
 import { TableBody, TableCell, TableHeader, TableRow } from '@shared/components/ui/table';
 import { Input } from '@shared/components/ui/input';

@@ -18,7 +18,6 @@ export function UserSettingsForm() {
   const [lastName, setLastName] = useState(metadata.last_name || '');
   const [companyName, setCompanyName] = useState(metadata.company_name || '');
 
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -84,7 +83,6 @@ export function UserSettingsForm() {
         return;
       }
 
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setPasswordMessage({ type: 'success', text: 'Şifre güncellendi.' });

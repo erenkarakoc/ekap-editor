@@ -11,10 +11,14 @@ import {
   Percent,
   PanelLeftClose,
   PanelLeft,
+  Crown,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 import { Kbd } from '@shared/components/ui/kbd';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/components/ui/tooltip';
+import { useAuth } from '@features/auth/context';
+import { isAdmin } from '@features/auth/types';
 
 export interface SidebarTool {
   id: string;
@@ -22,6 +26,7 @@ export interface SidebarTool {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   shortcut?: string;
+  adminOnly?: boolean;
 }
 
 export const TOOLS: SidebarTool[] = [
@@ -51,6 +56,8 @@ export const TOOLS: SidebarTool[] = [
     href: '/maliyet-sihirbazi',
     icon: Percent,
   },
+  { id: 'membership', label: 'Üyelik', href: '/uyelik', icon: Crown },
+  { id: 'admin', label: 'Admin Paneli', href: '/admin', icon: ShieldCheck, adminOnly: true },
 ];
 
 interface AppSidebarProps {
@@ -60,6 +67,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const visibleTools = TOOLS.filter((tool) => !tool.adminOnly || isAdmin(user));
 
   return (
     <div
@@ -78,7 +87,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
       {/* Tool Navigation */}
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 py-2">
-        {TOOLS.map((tool) => {
+        {visibleTools.map((tool) => {
           const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
           const IconComponent = tool.icon;
 

@@ -3,7 +3,7 @@
  * into desktop/nextjs-standalone/ for electron-builder to package.
  */
 import { execSync } from 'node:child_process';
-import { cpSync, rmSync, existsSync, copyFileSync } from 'node:fs';
+import { cpSync, rmSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -46,14 +46,6 @@ const publicDest = resolve(outputDir, 'public');
 if (existsSync(publicSrc)) {
   console.log('[build-nextjs] Copying public directory...');
   cpSync(publicSrc, publicDest, { recursive: true });
-}
-
-// Copy .env → desktop/nextjs-standalone/.env
-const envSrc = resolve(projectRoot, '.env');
-const envDest = resolve(outputDir, '.env');
-if (existsSync(envSrc)) {
-  console.log('[build-nextjs] Copying .env...');
-  copyFileSync(envSrc, envDest);
 }
 
 console.log('[build-nextjs] Standalone bundle ready at desktop/nextjs-standalone/');

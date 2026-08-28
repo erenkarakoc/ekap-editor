@@ -1,7 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const protectedRoutes = ['/', '/editor', '/user', '/yaklasik-maliyet', '/maliyet-sihirbazi'];
+const protectedRoutes = [
+  '/',
+  '/editor',
+  '/user',
+  '/yaklasik-maliyet',
+  '/maliyet-sihirbazi',
+  '/sinir-deger',
+  '/birim-fiyat',
+  '/fiyat-farki',
+  '/uyelik',
+  '/admin',
+];
 const authRoutes = ['/login', '/register'];
 
 export async function updateSession(request: NextRequest) {
@@ -11,7 +22,7 @@ export async function updateSession(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {

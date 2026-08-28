@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 import { AppSidebar, TOOLS } from '@shared/components/app-sidebar';
 import { TitleBar } from '@shared/components/title-bar';
@@ -15,7 +15,6 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => !prev);
@@ -32,7 +31,7 @@ export function AppShell({ children }: AppShellProps) {
   // Global keyboard shortcuts
   const shortcuts = useMemo<KeyboardShortcut[]>(
     () => [{ key: 'b', ctrl: true, handler: () => toggleSidebar() }],
-    [toggleSidebar, router],
+    [toggleSidebar],
   );
 
   useKeyboardShortcuts(shortcuts);
