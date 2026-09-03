@@ -3,6 +3,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { startServer, stopServer, initLog, log } from './server';
 import { initAutoUpdater } from './updater';
+import {
+  chooseWorkspace,
+  getEngineStatus,
+  listWorkspace,
+  readEngineLogs,
+  readWorkspaceFile,
+  startOllama,
+  startLocalEngine,
+  stopAllManagedProcesses,
+  stopLocalEngine,
+  verifyOllama,
+  writeWorkspaceFile,
+} from './local-engine';
 
 const isDev = !app.isPackaged;
 const DEV_SERVER_URL = 'http://localhost:3000';
@@ -101,7 +114,8 @@ function setupCSP(): void {
             `style-src 'self' 'unsafe-inline' ${httpOrigin} https://fonts.googleapis.com; ` +
             `font-src 'self' https://fonts.gstatic.com; ` +
             `img-src 'self' data: blob: ${httpOrigin}; ` +
-            `connect-src 'self' ${httpOrigin} ${wsOrigin} https://*.supabase.co wss://*.supabase.co`,
+            `connect-src 'self' ${httpOrigin} ${wsOrigin} https://*.supabase.co wss://*.supabase.co; ` +
+            `worker-src 'self' blob:`,
         ],
       },
     });
@@ -119,6 +133,20 @@ ipcMain.on('window-maximize', () => {
 });
 ipcMain.on('window-close', () => mainWindow?.close());
 ipcMain.handle('window-is-maximized', () => mainWindow?.isMaximized() ?? false);
+ipcMain.handle('local-engine-status', () => getEngineStatus());
+ipcMain.handle('local-engine-choose-workspace', () => chooseWorkspace());
+ipcMain.handle('local-engine-verify-ollama', () => verifyOllama());
+ipcMain.handle('local-engine-start-ollama', () => startOllama());
+ipcMain.handle('local-engine-start', () => startLocalEngine());
+ipcMain.handle('local-engine-stop', () => stopLocalEngine());
+ipcMain.handle('local-engine-logs', () => readEngineLogs());
+ipcMain.handle('workspace-list', (_event, relativePath?: string) => listWorkspace(relativePath));
+ipcMain.handle('workspace-read', (_event, relativePath: string) => readWorkspaceFile(relativePath));
+ipcMain.handle(
+  'workspace-write',
+  (_event, input: { path: string; content: string; expectedSha256: string }) =>
+    writeWorkspaceFile(input),
+);
 
 app.whenReady().then(async () => {
   initLog(isDev ? undefined : process.resourcesPath);
@@ -159,6 +187,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('before-quit', () => {
+  stopAllManagedProcesses();
   stopServer();
 });
 

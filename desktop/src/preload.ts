@@ -51,4 +51,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   installUpdate: () => ipcRenderer.invoke('install-update'),
   startDownload: () => ipcRenderer.invoke('start-download'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  localEngineStatus: () => ipcRenderer.invoke('local-engine-status'),
+  chooseWorkspace: () => ipcRenderer.invoke('local-engine-choose-workspace'),
+  verifyOllama: () => ipcRenderer.invoke('local-engine-verify-ollama'),
+  startOllama: () => ipcRenderer.invoke('local-engine-start-ollama'),
+  startLocalEngine: () => ipcRenderer.invoke('local-engine-start'),
+  stopLocalEngine: () => ipcRenderer.invoke('local-engine-stop'),
+  readEngineLogs: () => ipcRenderer.invoke('local-engine-logs'),
+  listWorkspace: (path?: string) => ipcRenderer.invoke('workspace-list', path),
+  readWorkspaceFile: (path: string) => ipcRenderer.invoke('workspace-read', path),
+  writeWorkspaceFile: (input: { path: string; content: string; expectedSha256: string }) =>
+    ipcRenderer.invoke('workspace-write', input),
 });
