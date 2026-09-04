@@ -12,10 +12,15 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  UnlockKeyhole,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { gorevKarariAction, gorevOlusturAction } from '@features/admin/actions';
+import {
+  gorevKarariAction,
+  gorevKilitleriniKurtarAction,
+  gorevOlusturAction,
+} from '@features/admin/actions';
 import type { AdminBolumVerisi, AdminGorev, YonetimOlayi } from '@features/admin/types';
 import { createClient } from '@shared/lib/supabase/client';
 import {
@@ -46,6 +51,7 @@ import { ScrollArea } from '@shared/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -86,6 +92,10 @@ export function OperationsView({ gorevler }: { gorevler: AdminBolumVerisi<AdminG
         return eslesiyor && (durum === 'tum' || gorev.durum === durum);
       }),
     [arama, durum, gorevler.data],
+  );
+  const bayatGorevVar = useMemo(
+    () => gorevler.data.some((gorev) => gorev.bayat_mi),
+    [gorevler.data],
   );
 
   useEffect(() => {
@@ -139,10 +149,11 @@ export function OperationsView({ gorevler }: { gorevler: AdminBolumVerisi<AdminG
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6">
       <SectionHeader
         baslik="Operasyonlar"
-        aciklama="Görev ağacını filtreleyin, canlı model/araç olaylarını izleyin ve kontrollü müdahale edin."
+        aciklama="Görev ağacını filtreleyin, canlı işlem olaylarını izleyin ve kontrollü müdahale edin."
         actions={<YeniGorevDialog />}
       />
       <InfrastructureAlert message={gorevler.uyari} />
+      {bayatGorevVar && <StaleTaskAlert />}
       <Card className="gap-0 py-0">
         <div className="flex flex-col gap-3 border-b p-3 md:flex-row md:items-center">
           <div className="relative flex-1">
@@ -163,14 +174,21 @@ export function OperationsView({ gorevler }: { gorevler: AdminBolumVerisi<AdminG
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="tum">Tüm durumlar</SelectItem>
-              {['bekliyor', 'calisiyor', 'insan_bekliyor', 'tamamlandi', 'basarisiz', 'iptal'].map(
-                (item) => (
+              <SelectGroup>
+                <SelectItem value="tum">Tüm durumlar</SelectItem>
+                {[
+                  'bekliyor',
+                  'calisiyor',
+                  'insan_bekliyor',
+                  'tamamlandi',
+                  'basarisiz',
+                  'iptal',
+                ].map((item) => (
                   <SelectItem key={item} value={item}>
                     {item.replaceAll('_', ' ')}
                   </SelectItem>
-                ),
-              )}
+                ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
           <Button variant="outline" className="h-10" onClick={() => location.reload()}>
@@ -254,7 +272,7 @@ export function OperationsView({ gorevler }: { gorevler: AdminBolumVerisi<AdminG
                       <AlertDialogHeader>
                         <AlertDialogTitle>Görev iptal edilsin mi?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Çalışan worker ilk güvenli kesme noktasında görevi bırakır; olay ve audit
+                          Çalışan worker ilk güvenli kesme noktasında görevi bırakır; olay ve işlem
                           kayıtları korunur.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
@@ -392,7 +410,7 @@ function JsonBlock({ baslik, value }: { baslik: string; value: unknown }) {
 
 function YeniGorevDialog() {
   const [open, setOpen] = useState(false);
-  const [tur, setTur] = useState('sistem_testi');
+  const [tur, setTur] = useState('belge_isle');
   const [girdi, setGirdi] = useState('{}');
   const [isPending, startTransition] = useTransition();
   function kaydet() {
@@ -433,11 +451,19 @@ function YeniGorevDialog() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {['sistem_testi', 'belge_isle', 'sayfa_isle', 'poz_normalize'].map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {item}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  {[
+                    'belge_isle',
+                    'sayfa_isle',
+                    'poz_normalize',
+                    'analiz_normalize',
+                    'gorsel_dogrula',
+                  ].map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
@@ -463,5 +489,31 @@ function YeniGorevDialog() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function StaleTaskAlert() {
+  const [isPending, startTransition] = useTransition();
+  function recover() {
+    startTransition(async () => {
+      const sonuc = await gorevKilitleriniKurtarAction({ kilitSuresiSn: 900 });
+      if (sonuc.ok) toast.success('Süresi dolmuş görev kilitleri yeniden kuyruğa alındı.');
+      else toast.error(sonuc.error);
+    });
+  }
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-medium">Süresi dolmuş görev kilidi algılandı</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Bayatlık kararı RPC tarafından kilit veya başlangıç zamanına göre 15 dakikalık eşikle
+          üretildi.
+        </p>
+      </div>
+      <Button variant="outline" onClick={recover} disabled={isPending}>
+        {isPending ? <Loader2 className="animate-spin" /> : <UnlockKeyhole />}
+        Kilitleri kurtar
+      </Button>
+    </div>
   );
 }

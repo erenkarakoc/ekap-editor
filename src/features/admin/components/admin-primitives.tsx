@@ -109,6 +109,36 @@ const DURUMLAR: Record<string, { label: string; icon: typeof CheckCircle2; class
     icon: Clock3,
     className: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
   },
+  planned: {
+    label: 'Planlandı',
+    icon: Clock3,
+    className: 'border-muted-foreground/30 bg-muted text-muted-foreground',
+  },
+  running: {
+    label: 'Çalışıyor',
+    icon: Loader2,
+    className: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+  },
+  complete: {
+    label: 'Tamamlandı · donuk',
+    icon: CheckCircle2,
+    className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  },
+  needs_review: {
+    label: 'İnceleme gerekli · donuk',
+    icon: AlertCircle,
+    className: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
+  },
+  stopped: {
+    label: 'Yerini yeni aktarıma bıraktı',
+    icon: CircleDashed,
+    className: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
+  },
+  failed: {
+    label: 'Başarısız',
+    icon: XCircle,
+    className: 'border-destructive/30 bg-destructive/10 text-destructive',
+  },
 };
 
 export function StatusBadge({ durum, className }: { durum: string; className?: string }) {
@@ -123,7 +153,10 @@ export function StatusBadge({ durum, className }: { durum: string; className?: s
       variant="outline"
       className={cn('gap-1 font-medium whitespace-nowrap', ayar.className, className)}
     >
-      <Icon className={cn('size-3', durum === 'calisiyor' && 'animate-spin')} aria-hidden="true" />
+      <Icon
+        className={cn('size-3', (durum === 'calisiyor' || durum === 'running') && 'animate-spin')}
+        aria-hidden="true"
+      />
       {ayar.label}
     </Badge>
   );
@@ -131,7 +164,9 @@ export function StatusBadge({ durum, className }: { durum: string; className?: s
 
 export function formatDate(value: string | null | undefined) {
   if (!value) return '—';
-  return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'medium' }).format(
-    new Date(value),
-  );
+  return new Intl.DateTimeFormat('tr-TR', {
+    dateStyle: 'short',
+    timeStyle: 'medium',
+    timeZone: 'Europe/Istanbul',
+  }).format(new Date(value));
 }

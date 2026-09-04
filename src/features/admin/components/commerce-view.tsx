@@ -6,7 +6,6 @@ import {
   Building2,
   Check,
   Copy,
-  History,
   Loader2,
   PackagePlus,
   Pencil,
@@ -106,7 +105,7 @@ const VARSAYILAN_YETKILER: PaketYetkisi[] = [
   },
   {
     ozellik_kodu: 'ai.eslestirme',
-    ad: 'Ajan eşleştirmesi',
+    ad: 'Otomatik eşleştirme',
     kategori: 'Yapay zekâ',
     deger_turu: 'integer',
     etkin: false,
@@ -154,7 +153,6 @@ export function CommerceView({ veri }: { veri: AdminBolumVerisi<TicaretVerisi> }
           <TabsTrigger value="kullanim">Kullanım ve kota</TabsTrigger>
           <TabsTrigger value="odemeler">Ödemeler</TabsTrigger>
           <TabsTrigger value="iban">IBAN hesapları</TabsTrigger>
-          <TabsTrigger value="audit">Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="paketler">
           <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -195,9 +193,6 @@ export function CommerceView({ veri }: { veri: AdminBolumVerisi<TicaretVerisi> }
         </TabsContent>
         <TabsContent value="iban">
           <BankAccounts rows={veri.data.banka_hesaplari} onEdit={setBankaHesabi} />
-        </TabsContent>
-        <TabsContent value="audit">
-          <AuditLog rows={veri.data.audit} />
         </TabsContent>
       </Tabs>
       <PackageDialog value={duzenlenen} onOpenChange={(open) => !open && setDuzenlenen(null)} />
@@ -1113,57 +1108,6 @@ function BankAccountDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function AuditLog({ rows }: { rows: TicaretVerisi['audit'] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <History className="text-primary size-4" /> Yönetim audit akışı
-        </CardTitle>
-        <CardDescription>
-          Paket, kullanıcı, ödeme, IBAN ve ajan tanımı kararlarının son 250 değişmez kaydı.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {rows.length === 0 ? (
-          <Empty text="Audit kaydı henüz oluşmadı." />
-        ) : (
-          <Accordion type="single" collapsible className="w-full">
-            {rows.map((row) => (
-              <AccordionItem key={row.id} value={String(row.id)}>
-                <AccordionTrigger className="min-h-11 hover:no-underline">
-                  <span className="flex min-w-0 items-center gap-3 text-left">
-                    <Badge variant="secondary">{row.hedef_turu}</Badge>
-                    <span className="truncate text-sm font-medium">{row.islem}</span>
-                    <span className="text-muted-foreground hidden text-xs lg:inline">
-                      {formatDate(row.olusturulma_zamani)}
-                    </span>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <dl className="grid gap-2 text-xs sm:grid-cols-2">
-                    <div>
-                      <dt className="text-muted-foreground">Admin</dt>
-                      <dd className="font-mono">{row.admin_id}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-foreground">Hedef</dt>
-                      <dd className="font-mono">{row.hedef_id ?? '—'}</dd>
-                    </div>
-                  </dl>
-                  <pre className="bg-muted mt-3 overflow-x-auto rounded-lg p-3 font-mono text-xs">
-                    {JSON.stringify(row.detay, null, 2)}
-                  </pre>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 

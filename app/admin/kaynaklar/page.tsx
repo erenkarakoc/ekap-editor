@@ -7,8 +7,8 @@ export default async function KaynaklarPage() {
     <SourcesView
       kurumlar={data.kurumlar as unknown as Record<string, unknown>[]}
       yayinlar={data.yayinlar as unknown as Record<string, unknown>[]}
-      aktarimlar={data.aktarimlar as unknown as Record<string, unknown>[]}
-      profiller={data.profiller as unknown as Record<string, unknown>[]}
+      profiller={data.profiller}
+      ozet={data.ozet}
       hata={data.hata}
     />
   );

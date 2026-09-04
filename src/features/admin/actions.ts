@@ -9,6 +9,13 @@ import type { ActionResult } from '@features/admin/types';
 
 const uuid = z.string().uuid();
 const jsonNesnesi = z.record(z.string(), z.unknown());
+const gorevTuru = z.enum([
+  'belge_isle',
+  'sayfa_isle',
+  'poz_normalize',
+  'analiz_normalize',
+  'gorsel_dogrula',
+]);
 
 async function adminRpc<T>(
   ad: string,
@@ -23,7 +30,7 @@ async function adminRpc<T>(
 
 export async function gorevOlusturAction(girdi: unknown): Promise<ActionResult> {
   const schema = z.object({
-    tur: z.string().trim().min(2).max(80),
+    tur: gorevTuru,
     girdi: jsonNesnesi.default({}),
     oncelik: z.number().int().min(0).max(1000).default(100),
     maksDeneme: z.number().int().min(1).max(10).default(3),
@@ -35,6 +42,16 @@ export async function gorevOlusturAction(girdi: unknown): Promise<ActionResult> 
     p_girdi_json: sonuc.data.girdi,
     p_oncelik: sonuc.data.oncelik,
     p_maks_deneme: sonuc.data.maksDeneme,
+  });
+  if (cevap.ok) revalidatePath('/admin/operasyonlar');
+  return cevap;
+}
+
+export async function gorevKilitleriniKurtarAction(girdi: unknown): Promise<ActionResult> {
+  const sonuc = z.object({ kilitSuresiSn: z.number().int().min(60).max(86_400) }).safeParse(girdi);
+  if (!sonuc.success) return { ok: false, error: sonuc.error.issues[0]?.message };
+  const cevap = await adminRpc('admin_gorev_kilitlerini_kurtar', {
+    p_kilit_suresi_sn: sonuc.data.kilitSuresiSn,
   });
   if (cevap.ok) revalidatePath('/admin/operasyonlar');
   return cevap;
@@ -58,72 +75,54 @@ export async function gorevKarariAction(girdi: unknown): Promise<ActionResult> {
   return cevap;
 }
 
-export async function ajanCalistirAction(girdi: unknown): Promise<ActionResult> {
+export async function pozAktariminiDurdurAction(girdi: unknown): Promise<ActionResult> {
   const sonuc = z
     .object({
-      ajanKodu: z.string().trim().min(2).max(80),
-      model: z.string().trim().min(1).max(160),
-      prompt: z.string().max(100_000),
-      baglam: jsonNesnesi.default({}),
-      parametreler: jsonNesnesi.default({}),
-      araclar: z.array(z.string().max(80)).max(30).default([]),
-      ciktiSemasi: jsonNesnesi.optional(),
+      aktarimId: uuid,
+      gerekce: z.string().trim().min(5).max(1000),
     })
     .safeParse(girdi);
   if (!sonuc.success) return { ok: false, error: sonuc.error.issues[0]?.message };
-  const cevap = await adminRpc('admin_gorev_olustur', {
-    p_tur:
-      sonuc.data.ajanKodu === 'model_konsolu' ? 'model_konsolu' : `ajan_${sonuc.data.ajanKodu}`,
-    p_girdi_json: {
-      model: sonuc.data.model,
-      prompt: sonuc.data.prompt,
-      baglam: sonuc.data.baglam,
-      parametreler: sonuc.data.parametreler,
-      araclar: sonuc.data.araclar,
-      cikti_semasi: sonuc.data.ciktiSemasi,
-    },
-    p_oncelik: 100,
-    p_maks_deneme: 2,
+  const cevap = await adminRpc('poz_aktarimini_durdur', {
+    p_aktarim_id: sonuc.data.aktarimId,
+    p_gerekce: sonuc.data.gerekce,
   });
-  if (cevap.ok) revalidatePath('/admin/ajanlar');
+  if (cevap.ok) revalidatePath('/admin/aktarimlar');
   return cevap;
 }
 
-export async function ajanTanimiKaydetAction(girdi: unknown): Promise<ActionResult> {
+export async function belgeProfiliOnaylaAction(girdi: unknown): Promise<ActionResult> {
   const sonuc = z
     .object({
-      kod: z.string().regex(/^[a-z0-9_]+$/),
-      ad: z.string().trim().min(2).max(100),
-      aciklama: z.string().trim().min(3).max(1000),
-      rol: z.string().trim().min(2).max(100),
-      model: z.string().trim().min(1).max(160),
-      fallbackModel: z.string().trim().max(160).nullable(),
-      promptAdi: z.string().trim().min(1).max(160),
-      promptSurumu: z.string().trim().min(1).max(80),
-      parametreler: jsonNesnesi,
-      araclar: z.array(z.string().regex(/^[a-z0-9_]+$/)).max(30),
-      ciktiSemasi: jsonNesnesi,
-      aktifMi: z.boolean(),
+      profilId: z.number().int().positive(),
+      kisitIhlaliSayisi: z.number().int().nonnegative(),
+      cozulemeyenSatirSayisi: z.number().int().nonnegative(),
+      aciklanamayanSayimFarki: z.number().int().nonnegative(),
+      tutarliMi: z.boolean(),
+      uyusmazSayfaSayisi: z.number().int().nonnegative(),
+      enPahaliOrnekSayisi: z.number().int().nonnegative(),
+      enUcuzOrnekSayisi: z.number().int().nonnegative(),
+      elleOrneklemeNotu: z.string().trim().min(10).max(2000),
+      gerekce: z.string().trim().min(10).max(2000),
     })
     .safeParse(girdi);
   if (!sonuc.success) return { ok: false, error: sonuc.error.issues[0]?.message };
-  const cevap = await adminRpc('admin_ajan_tanimi_surumu_kaydet', {
-    p_tanim: {
-      kod: sonuc.data.kod,
-      ad: sonuc.data.ad,
-      aciklama: sonuc.data.aciklama,
-      rol: sonuc.data.rol,
-      model: sonuc.data.model,
-      fallback_model: sonuc.data.fallbackModel || null,
-      prompt_adi: sonuc.data.promptAdi,
-      prompt_surumu: sonuc.data.promptSurumu,
-      parametreler: sonuc.data.parametreler,
-      araclar: sonuc.data.araclar,
-      cikti_semasi: sonuc.data.ciktiSemasi,
-      aktif_mi: sonuc.data.aktifMi,
-    },
+  const kabul = {
+    kisit_ihlali_sayisi: sonuc.data.kisitIhlaliSayisi,
+    cozulemeyen_satir_sayisi: sonuc.data.cozulemeyenSatirSayisi,
+    aciklanamayan_sayim_farki: sonuc.data.aciklanamayanSayimFarki,
+    tutarli_mi: sonuc.data.tutarliMi,
+    uyusmaz_sayfa_sayisi: sonuc.data.uyusmazSayfaSayisi,
+    en_pahali_ornek_sayisi: sonuc.data.enPahaliOrnekSayisi,
+    en_ucuz_ornek_sayisi: sonuc.data.enUcuzOrnekSayisi,
+    elle_ornekleme_notu: sonuc.data.elleOrneklemeNotu,
+  };
+  const cevap = await adminRpc('admin_belge_profili_onayla', {
+    p_profil_id: sonuc.data.profilId,
+    p_kabul: kabul,
+    p_gerekce: sonuc.data.gerekce,
   });
-  if (cevap.ok) revalidatePath('/admin/ajanlar');
+  if (cevap.ok) revalidatePath('/admin/kaynaklar');
   return cevap;
 }
 
@@ -171,6 +170,86 @@ export async function pozDuzeltmeTaslagiAction(girdi: unknown): Promise<ActionRe
     p_gerekce: sonuc.data.gerekce,
   });
   if (cevap.ok) revalidatePath('/admin/pozlar');
+  return cevap;
+}
+
+const nullableMetin = (uzunluk: number) => z.string().trim().max(uzunluk).nullable();
+const pozDuzeltmeAlanlari = z
+  .object({
+    eski_poz_numarasi: nullableMetin(160).optional(),
+    tanim: z.string().trim().min(2).max(10_000).optional(),
+    tanim_on_eki: nullableMetin(10_000).optional(),
+    tanim_son_eki: nullableMetin(10_000).optional(),
+    birim: nullableMetin(100).optional(),
+    birim_kodu: nullableMetin(100).optional(),
+    poz_turu: z
+      .enum(['unit_price', 'rayic', 'karsiz', 'bolum_basligi', 'analysis_header', 'other'])
+      .optional(),
+    kategori: nullableMetin(500).optional(),
+    alt_kategori: nullableMetin(500).optional(),
+    satin_alma_yeri: nullableMetin(1000).optional(),
+    notlar: nullableMetin(10_000).optional(),
+    tarif: nullableMetin(50_000).optional(),
+    olcum_kurali: nullableMetin(20_000).optional(),
+    odeme_esasi: nullableMetin(20_000).optional(),
+    dahil_olan_masraflar: z.array(z.string().trim().min(1).max(2000)).max(100).optional(),
+    dahil_olmayan_masraflar: z.array(z.string().trim().min(1).max(2000)).max(100).optional(),
+  })
+  .strict();
+const duzeltmeFiyati = z
+  .object({
+    fiyat_turu: z.enum([
+      'unit_price',
+      'alternate_unit_price',
+      'montage_price',
+      'demontage_price',
+      'rayic',
+      'karsiz',
+      'component_unit_price',
+      'other',
+    ]),
+    tutar: z
+      .string()
+      .trim()
+      .regex(
+        /^-?\d+(?:\.\d{1,4})?$/,
+        'Tutar nokta ayracıyla ve en fazla dört ondalıkla yazılmalıdır.',
+      ),
+    tutar_ham: z.string().trim().max(100).optional(),
+    para_birimi_kodu: z
+      .string()
+      .trim()
+      .regex(/^[A-Z]{3}$/),
+    birim_ham: nullableMetin(100).optional(),
+  })
+  .strict();
+
+export async function pozIncelemeTaslagiKaydetAction(girdi: unknown): Promise<ActionResult> {
+  const sonuc = z
+    .object({
+      pozSurumuId: uuid,
+      temelHash: z.string().regex(/^[0-9a-f]{64}$/),
+      degisiklikler: pozDuzeltmeAlanlari,
+      fiyatlar: z.array(duzeltmeFiyati).max(20).nullable(),
+      gerekce: z.string().trim().min(10).max(2000),
+    })
+    .safeParse(girdi);
+  if (!sonuc.success) return { ok: false, error: sonuc.error.issues[0]?.message };
+  if (Object.keys(sonuc.data.degisiklikler).length === 0 && sonuc.data.fiyatlar === null) {
+    return { ok: false, error: 'İncelemeye göndermek için en az bir alan değişmelidir.' };
+  }
+  const cevap = await adminRpc<{ inceleme_id: string }>('admin_poz_duzeltme_taslagi_kaydet_v2', {
+    p_poz_surumu_id: sonuc.data.pozSurumuId,
+    p_temel_hash: sonuc.data.temelHash,
+    p_degisiklikler: sonuc.data.degisiklikler,
+    p_fiyatlar: sonuc.data.fiyatlar,
+    p_gerekce: sonuc.data.gerekce,
+  });
+  if (cevap.ok) {
+    revalidatePath('/admin/pozlar');
+    revalidatePath(`/admin/pozlar/${sonuc.data.pozSurumuId}/incele`);
+    revalidatePath('/admin/inceleme');
+  }
   return cevap;
 }
 
@@ -226,16 +305,24 @@ export async function kaynakYayiniKaydetAction(girdi: unknown): Promise<ActionRe
     })
     .safeParse(girdi);
   if (!sonuc.success) return { ok: false, error: sonuc.error.issues[0]?.message };
+  const kurumAdresi = new URL(sonuc.data.kurumUrl);
+  if (kurumAdresi.hostname.toLocaleLowerCase('tr-TR').startsWith('www.')) {
+    return {
+      ok: false,
+      error: 'Resmî kurum URL alanına www değil apex alan adı girin (ör. https://csb.gov.tr/).',
+    };
+  }
+  const kurumApexUrl = `${kurumAdresi.protocol}//${kurumAdresi.hostname}/`;
   const yil = sonuc.data.donemEtiketi.match(/\b(20\d{2})\b/)?.[1] ?? '';
   const cevap = await adminRpc('admin_kaynak_yayini_kaydet', {
     p_veri: {
       kurum_kodu: sonuc.data.kurumKodu,
       kurum_adi: sonuc.data.kurumAdi,
       kurum_resmi_adi: sonuc.data.kurumResmiAdi || null,
-      kurum_url: sonuc.data.kurumUrl,
+      kurum_url: kurumApexUrl,
       katalog_anahtari: `${sonuc.data.kurumKodu}_RESMI`,
       katalog_adi: `${sonuc.data.kurumAdi} Resmî Yayınları`,
-      kaynak_sayfasi_url: sonuc.data.kurumUrl,
+      kaynak_sayfasi_url: kurumApexUrl,
       kitap_anahtari: sonuc.data.kitapKodu,
       kitap_adi: sonuc.data.kitapAdi,
       yayin_basligi: sonuc.data.yayinBasligi,

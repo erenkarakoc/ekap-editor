@@ -1,5 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+
+import 'server-only';
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -26,4 +29,22 @@ export async function createClient() {
       },
     },
   );
+}
+
+/**
+ * Worker RPC'leri service_role ile sinirlidir. Bu istemci yalnizca, cagirani
+ * once `adminOturumunuDogrula` ile yetkilendiren server-only veri katmaninda
+ * kullanilmalidir.
+ */
+export function createServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY sunucu ortaminda tanimli degil.');
+  }
+
+  return createSupabaseClient(url, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }

@@ -1,6 +1,5 @@
 import {
   Activity,
-  Bot,
   Building2,
   CircleAlert,
   ClipboardCheck,
@@ -11,7 +10,6 @@ import {
 
 import type { AdminBolumVerisi, AdminOzet, WorkerDurumu } from '@features/admin/types';
 import { InfrastructureAlert, SectionHeader, StatusBadge, formatDate } from './admin-primitives';
-import { LocalEngineCard } from './local-engine-card';
 import {
   Card,
   CardContent,
@@ -35,7 +33,6 @@ export function OverviewView({
   ozet: AdminBolumVerisi<AdminOzet>;
   workerlar: AdminBolumVerisi<WorkerDurumu[]>;
 }) {
-  const gorevToplami = Object.values(ozet.data.gorevler).reduce((toplam, sayi) => toplam + sayi, 0);
   const metrics = [
     metric('Poz', ozet.data.poz_sayisi, Database, 'Etkin katalog kaydı'),
     metric('Yayın', ozet.data.yayin_sayisi, Building2, 'Kurum ve kitap dönemleri'),
@@ -43,22 +40,21 @@ export function OverviewView({
     metric('İnceleme', ozet.data.inceleme_bekleyen, ClipboardCheck, 'Admin kararı bekliyor'),
     metric(
       'Aktif görev',
-      (ozet.data.gorevler.calisiyor ?? 0) + (ozet.data.gorevler.bekliyor ?? 0),
+      ozet.data.aktif_gorev_sayisi,
       Activity,
-      `${gorevToplami} toplam görev`,
+      `${ozet.data.gorev_toplami.toLocaleString('tr-TR')} toplam görev`,
     ),
     metric('Bekleyen ödeme', ozet.data.bekleyen_odeme, ReceiptText, 'Manuel karar gerekiyor'),
   ];
-  const basarisiz = ozet.data.gorevler.basarisiz ?? 0;
-  const tamamlanan = ozet.data.gorevler.tamamlandi ?? 0;
-  const basari =
-    tamamlanan + basarisiz > 0 ? Math.round((tamamlanan / (tamamlanan + basarisiz)) * 100) : 100;
+  const basarisiz = ozet.data.basarisiz_gorev_sayisi;
+  const tamamlanan = ozet.data.tamamlanan_gorev_sayisi;
+  const basari = ozet.data.gorev_basari_orani;
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6">
       <SectionHeader
         baslik="Operasyon genel bakışı"
-        aciklama="Worker, ajan, veri kalitesi ve ticari işlemlerin tek ekrandaki güncel görünümü."
+        aciklama="Worker, veri kalitesi ve ticari işlemlerin tek ekrandaki güncel görünümü."
       />
       <InfrastructureAlert message={ozet.uyari ?? workerlar.uyari} />
 
@@ -82,12 +78,11 @@ export function OverviewView({
         })}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.2fr_1fr_1fr]">
-        <LocalEngineCard />
+      <section className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Bot className="text-primary size-4" />
+              <Activity className="text-primary size-4" />
               Worker ağı
             </CardTitle>
             <CardDescription>Son heartbeat verisine göre</CardDescription>

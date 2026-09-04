@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import {
   CircleFadingArrowUp,
+  ArrowLeft,
+  FileText,
   LogOut,
   UserIcon,
   Moon,
@@ -27,7 +29,12 @@ import { UpdateDialog } from '@shared/components/update-dialog';
 
 interface TitleBarProps {
   title: string;
+  showAppReturn?: boolean;
 }
+
+const subscribeToElectron = () => () => {};
+const getElectronSnapshot = () => Boolean(window.electronAPI);
+const getServerElectronSnapshot = () => false;
 
 function TablerSquare(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -61,11 +68,15 @@ function TablerSquares(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function TitleBar({ title }: TitleBarProps) {
+export function TitleBar({ title, showAppReturn = false }: TitleBarProps) {
   const { user, signOut } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [isMaximized, setIsMaximized] = useState(false);
-  const [isElectron, setIsElectron] = useState(false);
+  const isElectron = useSyncExternalStore(
+    subscribeToElectron,
+    getElectronSnapshot,
+    getServerElectronSnapshot,
+  );
   const [updateInfo, setUpdateInfo] = useState<{
     version: string;
     releaseNotes: string | null;
@@ -77,10 +88,10 @@ export function TitleBar({ title }: TitleBarProps) {
   useEffect(() => {
     if (!window.electronAPI) return;
 
-    window.electronAPI.windowIsMaximized().then((maximized) => {
-      setIsElectron(true);
-      setIsMaximized(maximized);
-    });
+    window.electronAPI
+      .windowIsMaximized()
+      .then(setIsMaximized)
+      .catch(() => setIsMaximized(false));
     const cleanupMaximize = window.electronAPI.onMaximizeChange(setIsMaximized);
     const cleanupAvail = window.electronAPI.onUpdateAvailable((info) => {
       setUpdateInfo(info);
@@ -110,15 +121,37 @@ export function TitleBar({ title }: TitleBarProps) {
   return (
     <>
       <div
-        className="bg-background/95 flex h-8 shrink-0 items-center border-b backdrop-blur select-none"
+        className="bg-background/95 z-50 flex h-9 shrink-0 items-center border-b backdrop-blur select-none"
         style={isElectron ? ({ WebkitAppRegion: 'drag' } as React.CSSProperties) : undefined}
       >
-        {/* Left: Current tool name */}
-        <div
-          className="flex h-full items-center px-3"
-          style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
-        >
-          <span className="text-foreground text-sm">{title}</span>
+        <div className="flex h-full min-w-0 items-center gap-2 px-2.5">
+          {showAppReturn && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 gap-1.5 px-2 text-xs"
+              style={
+                isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined
+              }
+              asChild
+            >
+              <Link href="/editor" aria-label="Normal uygulamaya dön">
+                <ArrowLeft className="size-3.5" />
+                <span className="hidden sm:inline">Uygulamaya dön</span>
+              </Link>
+            </Button>
+          )}
+          <Link
+            href="/"
+            className="text-foreground flex shrink-0 items-center gap-1.5 text-xs font-semibold"
+            style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
+            aria-label="EKAP Editör ana sayfası"
+          >
+            <FileText className="size-3.5" />
+            <span>EKAP Editör</span>
+          </Link>
+          <span className="bg-border h-4 w-px shrink-0" aria-hidden="true" />
+          <span className="text-muted-foreground truncate text-xs">{title}</span>
         </div>
 
         {/* Draggable spacer */}
@@ -126,7 +159,7 @@ export function TitleBar({ title }: TitleBarProps) {
 
         {/* Right side: Theme + User */}
         <div
-          className="flex h-full items-center gap-1"
+          className="flex h-full shrink-0 items-center gap-1"
           style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
         >
           {updateInfo && !showUpdateDialog && (
@@ -207,7 +240,7 @@ export function TitleBar({ title }: TitleBarProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
+              className="hover:bg-muted h-full w-10 cursor-pointer rounded-none border-none shadow-none"
               aria-label="Pencereyi küçült"
               onClick={() => window.electronAPI?.windowMinimize()}
             >
@@ -216,7 +249,7 @@ export function TitleBar({ title }: TitleBarProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-muted h-full w-8 cursor-pointer rounded-none border-none shadow-none"
+              className="hover:bg-muted h-full w-10 cursor-pointer rounded-none border-none shadow-none"
               aria-label={isMaximized ? 'Pencereyi önceki boyutuna getir' : 'Pencereyi büyüt'}
               onClick={() => window.electronAPI?.windowMaximize()}
             >
@@ -229,7 +262,7 @@ export function TitleBar({ title }: TitleBarProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-full w-10 cursor-pointer rounded-none border-none shadow-none hover:bg-red-500 hover:text-white"
+              className="h-full w-11 cursor-pointer rounded-none border-none shadow-none hover:bg-red-500 hover:text-white"
               aria-label="Pencereyi kapat"
               onClick={() => window.electronAPI?.windowClose()}
             >

@@ -77,14 +77,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         collapsed ? 'w-12' : 'w-[220px]',
       )}
     >
-      {/* Logo / App Name */}
-      <div className="flex h-8 shrink-0 items-center border-b px-3">
-        <Link href="/" className="flex items-center gap-2 overflow-hidden">
-          <FileText className="size-4 shrink-0" />
-          {!collapsed && <span className="truncate text-sm">Ekap Editör</span>}
-        </Link>
-      </div>
-
       {/* Tool Navigation */}
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 py-2">
         {visibleTools.map((tool) => {
@@ -146,9 +138,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             <>
               <PanelLeftClose className="size-4 shrink-0" />
               <span className="flex-1 truncate text-left">Daralt</span>
-              <Kbd className="text-sidebar-foreground/40">
-                Ctrl+B
-              </Kbd>
+              <Kbd className="text-sidebar-foreground/40">Ctrl+B</Kbd>
             </>
           )}
         </button>

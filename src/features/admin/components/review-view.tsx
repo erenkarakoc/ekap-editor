@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { Check, ClipboardCheck, Eye, Loader2, Search, ShieldAlert, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,6 +40,13 @@ import {
 } from '@shared/components/ui/table';
 import { Textarea } from '@shared/components/ui/textarea';
 import { InfrastructureAlert, SectionHeader, StatusBadge, formatDate } from './admin-primitives';
+
+const INCELEME_TUR_ETIKETLERI: Record<IncelemeKaydi['tur'], string> = {
+  ajan_onerisi: 'Sistem önerisi',
+  belge_profili: 'Belge profili',
+  poz_duzeltmesi: 'Poz düzeltmesi',
+  dosya_degisikligi: 'Dosya değişikliği',
+};
 
 export function ReviewView({ kayitlar }: { kayitlar: AdminBolumVerisi<IncelemeKaydi[]> }) {
   const [secilenler, setSecilenler] = useState<string[]>([]);
@@ -88,7 +96,7 @@ export function ReviewView({ kayitlar }: { kayitlar: AdminBolumVerisi<IncelemeKa
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6">
       <SectionHeader
         baslik="İnceleme merkezi"
-        aciklama="Kaynak, ham değer, ajan önerisi ve etkin sonucu yan yana karşılaştırın; toplu işlemleri güven eşiği ve örneklemle koruyun."
+        aciklama="Kaynak, ham değer, sistem önerisi ve etkin sonucu yan yana karşılaştırın; toplu işlemleri güven eşiği ve örneklemle koruyun."
       />
       <InfrastructureAlert message={kayitlar.uyari} />
       <Card className="gap-0 py-0">
@@ -104,15 +112,15 @@ export function ReviewView({ kayitlar }: { kayitlar: AdminBolumVerisi<IncelemeKa
             />
           </div>
           <Select value={tur} onValueChange={setTur}>
-            <SelectTrigger className="h-10 w-full">
+            <SelectTrigger className="h-10 w-full" aria-label="Öneri türü">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tum">Tüm öneri türleri</SelectItem>
-              {['ajan_onerisi', 'belge_profili', 'poz_duzeltmesi', 'dosya_degisikligi'].map(
-                (item) => (
-                  <SelectItem key={item} value={item}>
-                    {item.replaceAll('_', ' ')}
+              {(Object.entries(INCELEME_TUR_ETIKETLERI) as [IncelemeKaydi['tur'], string][]).map(
+                ([value, etiket]) => (
+                  <SelectItem key={value} value={value}>
+                    {etiket}
                   </SelectItem>
                 ),
               )}
@@ -128,6 +136,7 @@ export function ReviewView({ kayitlar }: { kayitlar: AdminBolumVerisi<IncelemeKa
               min={0}
               max={1}
               step={0.05}
+              aria-label="Asgari güven yüzdesi"
               onValueChange={(value) => {
                 setEsik(value[0] ?? 0.8);
                 setSecilenler([]);
@@ -191,7 +200,7 @@ export function ReviewView({ kayitlar }: { kayitlar: AdminBolumVerisi<IncelemeKa
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell>{kayit.tur.replaceAll('_', ' ')}</TableCell>
+                    <TableCell>{INCELEME_TUR_ETIKETLERI[kayit.tur]}</TableCell>
                     <TableCell>
                       <div className="flex min-w-28 items-center gap-2">
                         <Progress value={(kayit.guven_puani ?? 0) * 100} className="h-1.5" />
@@ -282,10 +291,14 @@ export function ReviewView({ kayitlar }: { kayitlar: AdminBolumVerisi<IncelemeKa
                     Onay, ham satırı değiştirmez; sürümlü etkin veri katmanına uygulanır.
                   </AlertDescription>
                 </Alert>
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <CompareBlock title="Mevcut / ham değer" data={secili.mevcut_veri} />
-                  <CompareBlock title="Ajan önerisi" data={secili.onerilen_veri} />
-                </div>
+                {secili.tur === 'poz_duzeltmesi' ? (
+                  <CorrectionReview kayit={secili} />
+                ) : (
+                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    <CompareBlock title="Mevcut / ham değer" data={secili.mevcut_veri} />
+                    <CompareBlock title="Sistem önerisi" data={secili.onerilen_veri} />
+                  </div>
+                )}
                 <CompareBlock
                   title="Uygulanan kurallar ve kanıt"
                   data={secili.kurallar}
@@ -298,6 +311,69 @@ export function ReviewView({ kayitlar }: { kayitlar: AdminBolumVerisi<IncelemeKa
       </Sheet>
     </div>
   );
+}
+
+function CorrectionReview({ kayit }: { kayit: IncelemeKaydi }) {
+  const degisiklikler =
+    kayit.onerilen_veri.degisiklikler && typeof kayit.onerilen_veri.degisiklikler === 'object'
+      ? (kayit.onerilen_veri.degisiklikler as Record<string, unknown>)
+      : {};
+  const pozSurumuId =
+    typeof kayit.kurallar.poz_surumu_id === 'string' ? kayit.kurallar.poz_surumu_id : null;
+  return (
+    <div className="mt-4 flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="font-medium">Alan bazlı düzeltme</h3>
+          <p className="text-muted-foreground text-xs">
+            Kaynak değer ve önerilen etkin değer karşılaştırması
+          </p>
+        </div>
+        {pozSurumuId ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/admin/pozlar/${pozSurumuId}/incele`}>PDF ile karşılaştır</Link>
+          </Button>
+        ) : null}
+      </div>
+      <div className="overflow-x-auto rounded-xl border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Alan</TableHead>
+              <TableHead>Mevcut</TableHead>
+              <TableHead>Önerilen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Object.entries(degisiklikler).map(([alan, deger]) => (
+              <TableRow key={alan}>
+                <TableCell className="font-medium">{alan.replaceAll('_', ' ')}</TableCell>
+                <TableCell className="max-w-80 whitespace-pre-wrap">
+                  {degerBicimle(kayit.mevcut_veri[alan])}
+                </TableCell>
+                <TableCell className="max-w-80 whitespace-pre-wrap">
+                  {degerBicimle(deger)}
+                </TableCell>
+              </TableRow>
+            ))}
+            {kayit.onerilen_veri.fiyatlar_degisti === true ? (
+              <TableRow>
+                <TableCell className="font-medium">fiyatlar</TableCell>
+                <TableCell>{degerBicimle(kayit.mevcut_veri.fiyatlar)}</TableCell>
+                <TableCell>{degerBicimle(kayit.onerilen_veri.fiyatlar)}</TableCell>
+              </TableRow>
+            ) : null}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function degerBicimle(value: unknown) {
+  if (value == null || value === '') return '—';
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value, null, 2);
 }
 
 function CompareBlock({

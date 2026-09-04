@@ -8,6 +8,21 @@ import type {
 
 type HamSatir = Record<string, unknown>;
 
+const IZINLI_KAYIT_TURLERI = new Set<PozAktarimSatiri['record_type']>([
+  'unit_price',
+  'rayic',
+  'karsiz',
+  'bolum_basligi',
+  'analysis_header',
+  'other',
+]);
+const FIYAT_ZORUNLU_KAYIT_TURLERI = new Set<PozAktarimSatiri['record_type']>([
+  'unit_price',
+  'rayic',
+  'karsiz',
+]);
+const ASGARI_FIYAT = -1_000_000_000;
+
 const ALAN_ESLEME: Record<string, keyof PozAktarimSatiri> = {
   POZ: 'poz',
   POZ_NO: 'poz',
@@ -73,7 +88,7 @@ function fiyat(deger: unknown): string | null {
     .replace(/\.(?=\d{3}(?:\D|$))/g, '')
     .replace(',', '.');
   const sayi = Number(temiz);
-  if (!Number.isFinite(sayi) || sayi < 0) return null;
+  if (!Number.isFinite(sayi) || sayi <= ASGARI_FIYAT) return null;
   return sayi.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
 }
 
@@ -85,7 +100,9 @@ function satirDonustur(ham: HamSatir, index: number): PozAktarimSatiri {
   }
 
   const kayitTuru = metin(eslenmis.record_type)?.toLocaleLowerCase('tr-TR');
-  const izinliTurler = new Set(['unit_price', 'rayic', 'karsiz', 'other']);
+  const recordType = IZINLI_KAYIT_TURLERI.has(kayitTuru as PozAktarimSatiri['record_type'])
+    ? (kayitTuru as PozAktarimSatiri['record_type'])
+    : 'unit_price';
 
   return {
     poz: metin(eslenmis.poz) ?? '',
@@ -105,9 +122,7 @@ function satirDonustur(ham: HamSatir, index: number): PozAktarimSatiri {
     page: Math.max(1, Number(eslenmis.page) || 1),
     source_row: index + 2,
     source_table: null,
-    record_type: izinliTurler.has(kayitTuru ?? '')
-      ? (kayitTuru as PozAktarimSatiri['record_type'])
-      : 'unit_price',
+    record_type: recordType,
   };
 }
 
@@ -121,7 +136,12 @@ export function aktarimSatirlariniDogrula(satirlar: PozAktarimSatiri[]): Aktarim
     if (!satir.description) {
       hatalar.push({ satir: satirNo, alan: 'DESCRIPTION', mesaj: 'Açıklama zorunludur.' });
     }
-    if (!satir.unit_price && !satir.montage_price && !satir.demontage_price) {
+    if (
+      FIYAT_ZORUNLU_KAYIT_TURLERI.has(satir.record_type) &&
+      !satir.unit_price &&
+      !satir.montage_price &&
+      !satir.demontage_price
+    ) {
       hatalar.push({ satir: satirNo, alan: 'UNIT_PRICE', mesaj: 'En az bir fiyat girilmelidir.' });
     }
     for (const [alan, deger] of [
@@ -129,11 +149,11 @@ export function aktarimSatirlariniDogrula(satirlar: PozAktarimSatiri[]): Aktarim
       ['MONTAGE_PRICE', satir.montage_price],
       ['DEMONTAGE_PRICE', satir.demontage_price],
     ] as const) {
-      if (deger !== null && (!Number.isFinite(Number(deger)) || Number(deger) < 0)) {
+      if (deger !== null && (!Number.isFinite(Number(deger)) || Number(deger) <= ASGARI_FIYAT)) {
         hatalar.push({
           satir: satirNo,
           alan,
-          mesaj: 'Fiyat sıfır veya daha büyük sayı olmalıdır.',
+          mesaj: 'Fiyat -1.000.000.000 değerinden büyük geçerli bir sayı olmalıdır.',
         });
       }
     }

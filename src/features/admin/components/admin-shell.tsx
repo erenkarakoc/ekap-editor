@@ -4,17 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Activity,
-  Bot,
   Boxes,
   Building2,
   ChevronRight,
   ClipboardCheck,
   Database,
   FileCode2,
+  FileSearch,
   LayoutDashboard,
   Menu,
   Search,
-  Settings2,
+  ScanSearch,
 } from 'lucide-react';
 
 import { Button } from '@shared/components/ui/button';
@@ -38,29 +38,40 @@ const BOLUMLER = [
     icon: LayoutDashboard,
   },
   {
+    href: '/admin/pozlar',
+    ad: 'Poz gezgini',
+    kisa: 'Başlık, birim, fiyat ve kaynak',
+    icon: Search,
+  },
+  {
+    href: '/admin/aktarimlar',
+    ad: 'Aktarım koşuları',
+    kisa: 'Soykütüğü ve tutarlılık',
+    icon: FileSearch,
+  },
+  {
+    href: '/admin/gorsel-dogrulama',
+    ad: 'Görsel doğrulama',
+    kisa: 'Uyuşmazlık kümeleri ve kanıt',
+    icon: ScanSearch,
+  },
+  {
+    href: '/admin/kaynaklar',
+    ad: 'Kaynaklar ve profiller',
+    kisa: 'Envanter, kapsam ve profil kabulü',
+    icon: Building2,
+  },
+  {
     href: '/admin/operasyonlar',
     ad: 'Operasyonlar',
     kisa: 'Görev kuyruğu ve canlı akış',
     icon: Activity,
   },
-  { href: '/admin/ajanlar', ad: 'Ajan stüdyosu', kisa: 'Ollama modelleri ve promptlar', icon: Bot },
   {
     href: '/admin/inceleme',
     ad: 'İnceleme merkezi',
-    kisa: 'Taslak, örneklem ve onay',
+    kisa: 'Taslak düzeltmeler ve kararlar',
     icon: ClipboardCheck,
-  },
-  {
-    href: '/admin/pozlar',
-    ad: 'Poz yönetimi',
-    kisa: 'Sürüm, fiyat ve kaynak kanıtı',
-    icon: Search,
-  },
-  {
-    href: '/admin/kaynaklar',
-    ad: 'Kaynaklar',
-    kisa: 'Kurum, yayın ve aktarımlar',
-    icon: Building2,
   },
   {
     href: '/admin/calisma-alani',
@@ -145,8 +156,8 @@ function CurrentBreadcrumb() {
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-muted/15 flex min-h-0 flex-1 overflow-hidden">
-      <aside className="bg-background/95 hidden w-64 shrink-0 border-r lg:flex lg:flex-col">
+    <div className="bg-muted/15 flex h-full min-h-0 flex-1 overflow-hidden">
+      <aside className="bg-background/95 hidden w-[220px] shrink-0 border-r lg:flex lg:flex-col">
         <div className="flex h-14 items-center gap-2 border-b px-4">
           <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
             <Database className="size-4" aria-hidden="true" />
@@ -161,12 +172,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <ScrollArea className="min-h-0 flex-1">
           <AdminNav />
         </ScrollArea>
-        <div className="border-t p-3">
-          <div className="bg-muted/70 text-muted-foreground flex items-center gap-2 rounded-lg px-3 py-2 text-xs">
-            <Settings2 className="size-3.5" aria-hidden="true" />
-            <span>Admin işlemleri audit kaydına alınır</span>
-          </div>
-        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">

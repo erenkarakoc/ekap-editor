@@ -15,6 +15,9 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
+  const isAdminPage = pathname.startsWith('/admin');
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+  const showAppSidebar = !isAdminPage && !isAuthPage;
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => !prev);
@@ -23,6 +26,9 @@ export function AppShell({ children }: AppShellProps) {
   // Find current tool name based on pathname
   const currentTitle = useMemo(() => {
     if (pathname === '/' || pathname === '') return 'Ana Sayfa';
+    if (pathname.startsWith('/admin')) return 'Yönetim merkezi';
+    if (pathname.startsWith('/login')) return 'Giriş yap';
+    if (pathname.startsWith('/register')) return 'Hesap oluştur';
     if (pathname === '/user') return 'Hesap Ayarları';
     const tool = TOOLS.find((t) => pathname === t.href || pathname.startsWith(t.href + '/'));
     return tool?.label ?? 'EKAP Editör';
@@ -37,17 +43,16 @@ export function AppShell({ children }: AppShellProps) {
   useKeyboardShortcuts(shortcuts);
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <AppSidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
+      <TitleBar title={currentTitle} showAppReturn={isAdminPage} />
 
-      {/* Right side: title bar + content + status bar */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Title Bar */}
-        <TitleBar title={currentTitle} />
-
-        {/* Main Content Area (feature views live here) */}
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
+      <div className="flex min-h-0 flex-1">
+        {showAppSidebar && <AppSidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />}
+        {isAdminPage ? (
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{children}</div>
+        ) : (
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{children}</main>
+        )}
       </div>
     </div>
   );

@@ -95,7 +95,6 @@ export function EditorView({
   // (dialogs use Portals and would remain visible even when EditorView is hidden)
   useEffect(() => {
     if (!isActive) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Required to close Portal-based dialogs when tab switches
       setUploadDialogOpen(false);
       setBatchUpdateDialogOpen(false);
       setShowInfo(false);
@@ -317,7 +316,6 @@ export function EditorView({
   useEffect(() => {
     if (containerWidth > 0) {
       prevLayoutKeyRef.current = ''; // Reset to force recalculation
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid pattern for responsive layout adjustment
       adjustColumnWidths(containerWidth);
     }
   }, [visibleColumns, containerWidth, adjustColumnWidths]);
