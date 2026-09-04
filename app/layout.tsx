@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, JetBrains_Mono } from 'next/font/google';
 import { Toaster } from '@shared/components/ui/sonner';
 import { ThemeProvider } from '@shared/components/theme-provider';
 import { TooltipProvider } from '@shared/components/ui/tooltip';
@@ -13,8 +13,8 @@ const geistSans = Geist({
   subsets: ['latin', 'latin-ext'],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains-mono',
   subsets: ['latin', 'latin-ext'],
 });
 
@@ -35,8 +35,8 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="tr" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="tr" className={`${geistSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+      <body>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
