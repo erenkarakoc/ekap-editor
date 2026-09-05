@@ -146,7 +146,7 @@ export function WorkspaceView() {
       <div className="mx-auto w-full max-w-[1200px] space-y-5 p-4 sm:p-6">
         <SectionHeader
           baslik="Çalışma alanı"
-          aciklama="Kamu-poz dosya envanteri, salt-okunur önizleme ve onaylı diff uygulama alanı."
+          aciklama="İcmal Veri dosya envanteri, salt-okunur önizleme ve onaylı diff uygulama alanı."
         />
         <Card>
           <CardHeader>
@@ -155,7 +155,7 @@ export function WorkspaceView() {
               Masaüstü uygulaması gerekli
             </CardTitle>
             <CardDescription>
-              Tarayıcı sürümü yerel dosya sistemine erişmez. Bu bölümü EKAP Editör Electron
+              Tarayıcı sürümü yerel dosya sistemine erişmez. Bu bölümü İcmal masaüstü
               uygulamasında açın.
             </CardDescription>
           </CardHeader>

@@ -24,7 +24,7 @@ export function SectionHeader({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{baslik}</h1>
+        <h1 className="display-heading text-xl   sm:text-2xl">{baslik}</h1>
         <p className="text-muted-foreground mt-1 max-w-3xl text-sm">{aciklama}</p>
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}

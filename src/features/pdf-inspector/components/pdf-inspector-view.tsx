@@ -68,7 +68,7 @@ export function PdfInspectorView() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">PDF Inspector</h1>
+        <h1 className="display-heading text-2xl">PDF Inspector</h1>
         <p className="text-muted-foreground text-sm">
           PDF tamamen tarayıcıda, WebAssembly ile çözümlenir. Dosya hiçbir sunucuya
           yüklenmez.

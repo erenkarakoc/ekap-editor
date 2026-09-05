@@ -98,7 +98,7 @@ export function UserSettingsForm() {
       {/* Profile Section */}
       <form onSubmit={handleProfileSubmit} className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Profil Bilgileri</h2>
+          <h2 className="display-heading text-lg">Profil Bilgileri</h2>
           <p className="text-muted-foreground text-sm">
             Hesap türünüzü ve bilgilerinizi güncelleyin.
           </p>
@@ -202,7 +202,7 @@ export function UserSettingsForm() {
       {/* Password Section */}
       <form onSubmit={handlePasswordSubmit} className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Şifre Değiştir</h2>
+          <h2 className="display-heading text-lg">Şifre Değiştir</h2>
           <p className="text-muted-foreground text-sm">Hesap şifrenizi güncelleyin.</p>
         </div>
 

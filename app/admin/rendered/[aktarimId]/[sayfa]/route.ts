@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { adminOturumunuDogrula } from '@features/auth/dal';
@@ -22,7 +23,17 @@ export async function GET(
 
   const kok = path.resolve(
     /* turbopackIgnore: true */
-    process.env.KAMU_POZ_RENDERED_ROOT ?? path.join(process.cwd(), '..', 'storage', 'rendered'),
+    process.env.ICMAL_RENDERED_ROOT ??
+      process.env.KAMU_POZ_RENDERED_ROOT ??
+      path.join(
+        process.cwd(),
+        '..',
+        ...(existsSync(path.join(process.cwd(), '..', 'icmal-veri', 'worker', 'main.py'))
+          ? ['icmal-veri']
+          : []),
+        'storage',
+        'rendered',
+      ),
   );
   const dosya = path.resolve(kok, aktarimId, `s${String(sayfa).padStart(5, '0')}.png`);
   const goreli = path.relative(kok, dosya);

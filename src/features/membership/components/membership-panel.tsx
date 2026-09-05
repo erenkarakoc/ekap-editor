@@ -176,7 +176,7 @@ export function UyelikPaneli() {
     <div className="flex-1 overflow-y-auto p-5">
       <div className="mx-auto max-w-6xl space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Üyelik ve ödeme</h1>
+          <h1 className="display-heading text-2xl">Üyelik ve ödeme</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Paketinizi seçin, IBAN’a ödeme yaptıktan sonra dekontu yükleyin.
           </p>

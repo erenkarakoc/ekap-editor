@@ -7,7 +7,7 @@ export default function UserPage() {
     <div className="flex-1 overflow-auto p-4 md:p-8">
       <div className="mx-auto w-full max-w-lg">
         <div className="mb-6">
-          <h1 className="text-xl font-bold">Hesap Ayarları</h1>
+          <h1 className="display-heading text-xl">Hesap Ayarları</h1>
           <p className="text-muted-foreground text-sm">
             Hesap bilgilerinizi ve tercihlerinizi yönetin.
           </p>

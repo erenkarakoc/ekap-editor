@@ -134,3 +134,13 @@
     @apply font-sans;
   }
 }
+
+/* Display headings share one style; compact data labels keep their own type. */
+@utility display-heading {
+  font-family: var(--font-literata-display), Georgia, serif;
+  font-weight: 700;
+  font-style: italic;
+  font-optical-sizing: auto;
+  letter-spacing: normal;
+  text-wrap: balance;
+}

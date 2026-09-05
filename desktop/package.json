@@ -1,13 +1,13 @@
 {
-  "name": "ekap-editor-desktop",
-  "version": "1.0.10",
+  "name": "icmal-desktop",
+  "version": "1.0.11",
   "private": true,
   "engines": {
     "node": ">=24"
   },
-  "description": "EKAP Editör Desktop App",
+  "description": "İcmal masaüstü uygulaması",
   "main": "dist/main.js",
-  "author": "EKAP",
+  "author": "İcmal",
   "scripts": {
     "dev": "tsc && concurrently -k -n next,electron -c blue,green \"npm run dev:next\" \"npm run dev:electron\"",
     "dev:next": "cd .. && npm run dev",

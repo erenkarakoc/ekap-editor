@@ -55,7 +55,7 @@ export default function HomePage() {
     <div className="flex flex-1 flex-col overflow-auto">
       <div className="flex flex-1 flex-col items-center justify-center p-6">
         <div className="w-full max-w-2xl">
-          <h1 className="mb-1 text-xl font-bold">Hoş Geldiniz</h1>
+          <h1 className="display-heading mb-1 text-xl">Hoş Geldiniz</h1>
           <p className="text-muted-foreground mb-6 text-sm">
             Bir araç seçin veya klavye kısayollarını kullanın.
           </p>

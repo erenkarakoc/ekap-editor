@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import { Toaster } from '@shared/components/ui/sonner';
 import { ThemeProvider } from '@shared/components/theme-provider';
 import { TooltipProvider } from '@shared/components/ui/tooltip';
@@ -7,6 +8,15 @@ import { AuthProvider } from '@features/auth/context';
 import { ShellWrapper } from '@shared/components/shell-wrapper';
 import { createClient } from '@shared/lib/supabase/server';
 import '../public/assets/css/globals.css';
+
+const literataDisplay = localFont({
+  src: './fonts/literata/Literata-Italic.ttf',
+  variable: '--font-literata-display',
+  weight: '700',
+  style: 'italic',
+  display: 'swap',
+  fallback: ['Georgia', 'serif'],
+});
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -19,9 +29,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'EKAP Editör',
-  description: 'Elektronik Kamu Alımları Platformu Teklif Editörü',
-  icons: { icon: '/favicon.ico' },
+  title: 'İcmal',
+  description: 'İcmal — maliyet, metraj, analiz ve teklif çalışma alanı',
+  icons: { icon: '/assets/images/brand/favicon_primary.svg' },
 };
 
 export default async function RootLayout({
@@ -35,7 +45,11 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="tr" className={`${geistSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html
+      lang="tr"
+      className={`${geistSans.variable} ${jetbrainsMono.variable} ${literataDisplay.variable}`}
+      suppressHydrationWarning
+    >
       <body>
         <ThemeProvider
           attribute="class"

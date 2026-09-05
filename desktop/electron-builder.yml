@@ -1,6 +1,6 @@
-appId: com.ekap.editor
-productName: EKAP Editör
-copyright: Copyright © 2026 EKAP
+appId: com.icmal.app
+productName: İcmal
+copyright: Copyright © 2026 İcmal
 
 directories:
   output: release
@@ -21,17 +21,19 @@ extraResources:
 publish:
   provider: github
   owner: erenkarakoc
-  repo: ekap-editor-releases
+  repo: icmal-releases
   releaseType: release
 
 win:
   target:
     - target: nsis
       arch: [x64]
-  icon: ../public/assets/images/favicon.ico
+  icon: ../public/assets/images/brand/favicon.ico
   verifyUpdateCodeSignature: true
 
 nsis:
+  # Stable legacy GUID preserves Windows uninstall/upgrade identity across the rename.
+  guid: 0421d3ae-87d3-5689-b3f5-b57db57f2a90
   oneClick: false
   allowToChangeInstallationDirectory: true
 

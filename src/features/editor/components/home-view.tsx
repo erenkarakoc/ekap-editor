@@ -52,7 +52,7 @@ export function HomeView({
       {/* Hero / Welcome Section */}
       <div className="flex-none p-8 pb-4">
         <div className="mx-auto w-full max-w-5xl">
-          <h1 className="mb-2 text-3xl font-bold tracking-tight">Hoş geldin!</h1>
+          <h1 className="display-heading mb-2 text-3xl">Hoş geldin!</h1>
           <p className="text-muted-foreground mb-8">EKAP dosyalarını yönetmeye başla.</p>
 
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -94,7 +94,7 @@ export function HomeView({
             <section>
               <div className="mb-4 flex items-center gap-2">
                 <Monitor className="text-primary size-5" />
-                <h2 className="text-xl font-semibold">Açık Dosyalar</h2>
+                <h2 className="display-heading text-xl">Açık Dosyalar</h2>
                 <Badge className="text-muted-foreground font-mono text-[10px]" variant="secondary">
                   {filteredActive.length}
                 </Badge>
@@ -130,7 +130,7 @@ export function HomeView({
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="text-muted-foreground size-5" />
-                <h2 className="text-xl font-semibold">Son Dosyalar</h2>
+                <h2 className="display-heading text-xl">Son Dosyalar</h2>
               </div>
               {recentFiles.length > 0 && onClearRecent && (
                 <Button variant="ghost" size="sm" onClick={onClearRecent} className="h-7 text-xs">

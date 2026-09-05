@@ -92,14 +92,14 @@ function validateWorkspaceRoot(candidate: string): string {
   const real = fs.realpathSync(candidate);
   const required = path.join(real, 'worker', 'main.py');
   if (!fs.statSync(real).isDirectory() || !fs.existsSync(required)) {
-    throw new Error('Seçilen klasör kamu-poz çalışma kökü değil (worker/main.py bulunamadı).');
+    throw new Error('Seçilen klasör İcmal Veri çalışma kökü değil (worker/main.py bulunamadı).');
   }
   return real;
 }
 
 function requireRoot(): string {
   const root = loadRoot();
-  if (!root) throw new Error('Önce kamu-poz çalışma kökünü seçin.');
+  if (!root) throw new Error('Önce İcmal Veri çalışma kökünü seçin.');
   return validateWorkspaceRoot(root);
 }
 
@@ -235,7 +235,7 @@ export async function getEngineStatus(): Promise<EngineStatus> {
 
 export async function chooseWorkspace(): Promise<EngineStatus> {
   const result = await dialog.showOpenDialog({
-    title: 'kamu-poz çalışma kökünü seçin',
+    title: 'İcmal Veri çalışma kökünü seçin',
     properties: ['openDirectory'],
   });
   if (!result.canceled && result.filePaths[0]) {

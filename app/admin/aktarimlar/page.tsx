@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { TransferRunsView } from '@features/admin/components/transfer-runs-view';
 import { aktarimlariGetir } from '@features/admin/lib/admin-data';
 
-export const metadata: Metadata = { title: 'Aktarım Koşuları | Kamu Poz Yönetimi' };
+export const metadata: Metadata = { title: 'Aktarım Koşuları | İcmal Yönetimi' };
 
 export default async function AktarimlarPage({
   searchParams,

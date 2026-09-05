@@ -189,5 +189,5 @@ jobs:
             desktop/scripts/Install-EKAPEditorCertificate.ps1 `
             desktop/scripts/Uninstall-EKAPEditorCertificate.ps1 `
             desktop/release/EKAP-Editor-SHA256.txt `
-            --repo erenkarakoc/ekap-editor-releases `
+            --repo erenkarakoc/icmal-releases `
             --clobber

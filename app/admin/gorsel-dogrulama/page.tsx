@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { VisualReviewView } from '@features/admin/components/visual-review-view';
 import { gorselDogrulamaGetir } from '@features/admin/lib/admin-data';
 
-export const metadata: Metadata = { title: 'Görsel Doğrulama | Kamu Poz Yönetimi' };
+export const metadata: Metadata = { title: 'Görsel Doğrulama | İcmal Yönetimi' };
 
 export default async function GorselDogrulamaPage({
   searchParams,

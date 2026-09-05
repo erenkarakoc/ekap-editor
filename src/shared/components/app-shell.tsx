@@ -31,7 +31,7 @@ export function AppShell({ children }: AppShellProps) {
     if (pathname.startsWith('/register')) return 'Hesap oluştur';
     if (pathname === '/user') return 'Hesap Ayarları';
     const tool = TOOLS.find((t) => pathname === t.href || pathname.startsWith(t.href + '/'));
-    return tool?.label ?? 'EKAP Editör';
+    return tool?.label ?? 'İcmal';
   }, [pathname]);
 
   // Global keyboard shortcuts

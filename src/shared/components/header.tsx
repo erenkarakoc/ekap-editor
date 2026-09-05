@@ -43,7 +43,7 @@ export function Header({
         {title && (
           <Link
             href="/"
-            className="text-foreground flex h-8 shrink-0 items-center px-2 text-sm font-semibold"
+            className="display-heading text-foreground flex h-8 shrink-0 items-center px-2 text-base"
           >
             {title}
           </Link>

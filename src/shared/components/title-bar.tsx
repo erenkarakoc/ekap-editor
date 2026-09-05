@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   CircleFadingArrowUp,
   ArrowLeft,
-  FileText,
   LogOut,
   UserIcon,
   Moon,
@@ -25,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@shared/components/ui/dropdown-menu';
 import { useAuth } from '@features/auth/context';
+import { BrandLogo } from '@shared/components/brand-logo';
 import { UpdateDialog } from '@shared/components/update-dialog';
 
 interface TitleBarProps {
@@ -106,7 +106,7 @@ export function TitleBar({ title, showAppReturn = false }: TitleBarProps) {
     });
     const cleanupStatus = window.electronAPI.onUpdateStatus(({ status, message }) => {
       if (status === 'checking') toast.info('Güncellemeler denetleniyor…');
-      if (status === 'current') toast.success('EKAP Editör güncel.');
+      if (status === 'current') toast.success('İcmal güncel.');
       if (status === 'error') toast.error(message ?? 'Güncelleme denetlenemedi.');
     });
     return () => {
@@ -145,10 +145,9 @@ export function TitleBar({ title, showAppReturn = false }: TitleBarProps) {
             href="/"
             className="text-foreground flex shrink-0 items-center gap-1.5 text-xs font-semibold"
             style={isElectron ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
-            aria-label="EKAP Editör ana sayfası"
+            aria-label="İcmal ana sayfası"
           >
-            <FileText className="size-3.5" />
-            <span>EKAP Editör</span>
+            <BrandLogo className="h-5" />
           </Link>
           <span className="bg-border h-4 w-px shrink-0" aria-hidden="true" />
           <span className="text-muted-foreground truncate text-xs">{title}</span>

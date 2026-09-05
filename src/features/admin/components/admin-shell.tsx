@@ -163,7 +163,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <Database className="size-4" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">Kamu Poz Yönetimi</p>
+            <p className="truncate text-sm font-semibold">İcmal Yönetimi</p>
             <p className="text-muted-foreground truncate text-[11px]">
               Operasyon ve veri kontrol düzlemi
             </p>
@@ -188,7 +188,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0">
-              <SheetTitle className="border-b px-4 py-4 text-left">Kamu Poz Yönetimi</SheetTitle>
+              <SheetTitle className="border-b px-4 py-4 text-left">İcmal Yönetimi</SheetTitle>
               <ScrollArea className="h-[calc(100vh-57px)]">
                 <AdminNav />
               </ScrollArea>

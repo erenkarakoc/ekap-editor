@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell, session } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { startServer, stopServer, initLog, log } from './server';
+import { APP_NAME, APP_ID, userDataPath } from './identity';
 import { initAutoUpdater } from './updater';
 import {
   chooseWorkspace,
@@ -16,6 +17,11 @@ import {
   verifyOllama,
   writeWorkspaceFile,
 } from './local-engine';
+
+// Resolve the legacy profile before Electron initializes its default session.
+app.setPath('userData', userDataPath(app.getPath('appData'), app.isPackaged));
+app.setName(APP_NAME);
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 
 const isDev = !app.isPackaged;
 const DEV_SERVER_URL = 'http://localhost:3000';
@@ -46,7 +52,7 @@ function createWindow(): void {
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: 'EKAP Editör',
+    title: APP_NAME,
     backgroundColor: '#000000',
     frame: false,
     show: false,
@@ -166,7 +172,7 @@ app.whenReady().then(async () => {
         );
         console.error('Failed to start Next.js server:', err);
         dialog.showErrorBox(
-          'EKAP Editör',
+          APP_NAME,
           `Sunucu başlatılamadı:\n${err instanceof Error ? err.message : String(err)}`,
         );
         app.quit();

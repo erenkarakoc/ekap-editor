@@ -12,6 +12,8 @@ const desktopDir = resolve(__dirname, '..');
 const projectRoot = resolve(desktopDir, '..');
 const outputDir = resolve(desktopDir, 'nextjs-standalone');
 
+execSync('node scripts/build-brand-assets.mjs', { cwd: projectRoot, stdio: 'inherit' });
+
 console.log('[build-nextjs] Building Next.js app...');
 execSync('npm run build', { cwd: projectRoot, stdio: 'inherit' });
 
