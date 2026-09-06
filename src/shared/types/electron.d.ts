@@ -21,6 +21,8 @@ declare global {
       platform: string;
       projectOpen: () => Promise<{token: string; name: string; bytes: Uint8Array} | null>;
       projectSave: (input: {token?: string; name: string; bytes: Uint8Array; saveAs: boolean}) => Promise<{token: string; name: string} | null>;
+      projectPending: () => Promise<{token: string; name: string; bytes: Uint8Array} | null>;
+      onProjectFilePending: (callback: () => void) => () => void;
       windowMinimize: () => void;
       windowMaximize: () => void;
       windowClose: () => void;

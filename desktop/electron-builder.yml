@@ -18,6 +18,13 @@ extraResources:
     filter:
       - '**/*'
 
+fileAssociations:
+  - ext: icmal
+    name: İcmal projesi
+    description: İcmal proje dosyası
+    icon: ../public/assets/images/brand/file-icon.ico
+    role: Editor
+
 publish:
   provider: github
   owner: erenkarakoc

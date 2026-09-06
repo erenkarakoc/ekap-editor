@@ -55,12 +55,14 @@ export function ProjectFileToolbar(props: Props) {
     finally { lock.current = false; setBusy(false); }
   }
 
-  async function openFile(file?: File) {
-    if ((!file && !desktop) || lock.current) return;
+  async function openFile(file?: File, handover?: {bytes: Uint8Array; token: string}) {
+    if ((!file && !handover && !desktop) || lock.current) return;
     lock.current = true; setBusy(true); setError(''); setMessage('');
     try {
       let bytes: Uint8Array, token: string | undefined;
-      if (desktop && !file) {
+      if (handover) {
+        bytes = handover.bytes; token = handover.token;
+      } else if (desktop && !file) {
         const selected = await window.electronAPI!.projectOpen();
         if (!selected) return;
         bytes = selected.bytes; token = selected.token;
@@ -108,6 +110,20 @@ export function ProjectFileToolbar(props: Props) {
     finally { lock.current = false; setBusy(false); }
   }
   const saveAction = useRef(exportFile); saveAction.current = exportFile;
+  const openAction = useRef(openFile); openAction.current = openFile;
+  // A .icmal file opened from the OS waits in the main process until this mounts.
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api?.projectPending) return;
+    let cancelled = false;
+    const collect = async () => {
+      const pending = await api.projectPending().catch(() => null);
+      if (pending && !cancelled) await openAction.current(undefined, {bytes: pending.bytes, token: pending.token});
+    };
+    void collect();
+    const stop = api.onProjectFilePending(() => void collect());
+    return () => { cancelled = true; stop(); };
+  }, []);
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {

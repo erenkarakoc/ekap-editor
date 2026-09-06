@@ -5,6 +5,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
   projectOpen: () => ipcRenderer.invoke('project-open'),
   projectSave: (input: {token?: string; name: string; bytes: Uint8Array; saveAs: boolean}) => ipcRenderer.invoke('project-save', input),
+  projectPending: () => ipcRenderer.invoke('project-pending'),
+  onProjectFilePending: (callback: () => void) => {
+    ipcRenderer.on('project-file-pending', callback);
+    return () => ipcRenderer.removeListener('project-file-pending', callback);
+  },
   windowMinimize: () => ipcRenderer.send('window-minimize'),
   windowMaximize: () => ipcRenderer.send('window-maximize'),
   windowClose: () => ipcRenderer.send('window-close'),

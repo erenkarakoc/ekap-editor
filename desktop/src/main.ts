@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell, session } from 'electron';
 import fs from 'node:fs';
 import { registerProjectFiles, registerProjectCloseGuard } from './project-files';
+import { projectPathFromArgv } from './project-launch';
 import path from 'node:path';
 import { startServer, stopServer, initLog, log } from './server';
 import { APP_NAME, APP_ID, userDataPath } from './identity';
@@ -29,6 +30,42 @@ const DEV_SERVER_URL = 'http://localhost:3000';
 
 let mainWindow: BrowserWindow | null = null;
 let serverUrl: string = DEV_SERVER_URL;
+let projectFiles: { handOver(target: string): void } | null = null;
+let launchProjectPath: string | null = null;
+
+function openProjectPath(target: string): void {
+  log(`Project file handover requested: ${path.basename(target)}`);
+  if (!mainWindow || !projectFiles) {
+    launchProjectPath = target;
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+  projectFiles.handOver(target);
+}
+
+// A second launch must reuse this window instead of starting a rival instance.
+const isPrimaryInstance = app.requestSingleInstanceLock();
+if (!isPrimaryInstance) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const target = projectPathFromArgv(argv);
+    if (target) openProjectPath(target);
+    else if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
+// macOS delivers the path through an event rather than argv.
+app.on('open-file', (event, target) => {
+  event.preventDefault();
+  openProjectPath(target);
+});
+
+launchProjectPath = projectPathFromArgv(process.argv);
 
 function getHostedWebUrl(resourcesPath: string): string | null {
   try {
@@ -66,7 +103,7 @@ function createWindow(): void {
     },
   });
 
-  registerProjectFiles(mainWindow, new URL(serverUrl).origin);
+  projectFiles = registerProjectFiles(mainWindow, new URL(serverUrl).origin);
   registerProjectCloseGuard(mainWindow);
   mainWindow.loadURL(serverUrl);
 
@@ -158,6 +195,7 @@ ipcMain.handle(
 );
 
 app.whenReady().then(async () => {
+  if (!isPrimaryInstance) return;
   initLog(isDev ? undefined : process.resourcesPath);
 
   if (!isDev) {
@@ -187,6 +225,12 @@ app.whenReady().then(async () => {
   setupCSP();
   createWindow();
   initAutoUpdater(mainWindow!);
+
+  if (launchProjectPath) {
+    const target = launchProjectPath;
+    launchProjectPath = null;
+    openProjectPath(target);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

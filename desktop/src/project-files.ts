@@ -4,6 +4,8 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { digest, fileDigest, PROJECT_LIMIT, writeProject } from './project-file-store';
 
+export type ProjectPayload = {token: string; name: string; bytes: Uint8Array};
+
 export function registerProjectFiles(window: BrowserWindow, origin: string) {
   const grants = new Map<string, {path: string; hash: string}>();
   let busy = false;
@@ -18,16 +20,18 @@ export function registerProjectFiles(window: BrowserWindow, origin: string) {
       try { return await action(input); } finally { busy = false; }
     });
   };
-  register('project-open', async () => {
-    const result = await dialog.showOpenDialog(window, {filters, properties: ['openFile']});
-    if (result.canceled) return null;
-    const target = result.filePaths[0];
+  const readProject = async (target: string): Promise<ProjectPayload> => {
     if (path.extname(target).toLowerCase() !== '.icmal') throw new Error('Bir .icmal dosyası seçin.');
     await fileDigest(target);
     const bytes = await fs.readFile(target);
     if (bytes.length > PROJECT_LIMIT) throw new Error('Dosya boyut sınırını aşıyor.');
     const token = randomUUID(); grants.set(token, {path: target, hash: digest(bytes)});
     return {token, name: path.basename(target), bytes: new Uint8Array(bytes)};
+  };
+  register('project-open', async () => {
+    const result = await dialog.showOpenDialog(window, {filters, properties: ['openFile']});
+    if (result.canceled) return null;
+    return readProject(result.filePaths[0]);
   });
   register('project-save', async input => {
     const data = input as {token?: string; name?: string; bytes?: Uint8Array; saveAs?: boolean};
@@ -48,7 +52,22 @@ export function registerProjectFiles(window: BrowserWindow, origin: string) {
     if (data.token) grants.delete(data.token);
     return {token, name: path.basename(target)};
   });
+  // The OS hands over a path when a .icmal file is double-clicked; the renderer
+  // collects it once it has mounted, so the handover cannot outrun the UI.
+  let pending: string | null = null;
+  register('project-pending', async () => {
+    const target = pending;
+    pending = null;
+    if (!target) return null;
+    return readProject(target);
+  });
   window.on('closed', () => grants.clear());
+  return {
+    handOver(target: string) {
+      pending = target;
+      if (!window.isDestroyed()) window.webContents.send('project-file-pending');
+    },
+  };
 }
 
 export function registerProjectCloseGuard(window: BrowserWindow) {
