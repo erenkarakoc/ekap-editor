@@ -19,6 +19,8 @@ declare global {
   interface Window {
     electronAPI?: {
       platform: string;
+      projectOpen: () => Promise<{token: string; name: string; bytes: Uint8Array} | null>;
+      projectSave: (input: {token?: string; name: string; bytes: Uint8Array; saveAs: boolean}) => Promise<{token: string; name: string} | null>;
       windowMinimize: () => void;
       windowMaximize: () => void;
       windowClose: () => void;

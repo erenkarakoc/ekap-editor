@@ -12,7 +12,7 @@ import type { PercentageCostRow, PercentageCostSortKey, PozEntry } from '../type
 const COLUMN_LABELS: Record<PercentageCostSortKey, string> = {
   rowNumber: '#',
   pozNo: 'Poz No',
-  description: 'Açıklama',
+  description: 'Tanım',
   unit: 'Birim',
   quantity: 'Miktar',
   unitPrice: 'B. Fiyat',
@@ -185,13 +185,13 @@ export function PercentageCostTable({
               />
             </TableCell>
 
-            {/* Açıklama */}
+            {/* Tanım */}
             <TableCell className="border-border max-w-0 overflow-hidden border-r border-b p-1">
-              <Input
-                className="h-8 text-sm"
+              <PozSearchCell
+                field="tanim"
                 value={row.description}
-                onChange={(e) => onUpdateRow(row.id, { description: e.target.value })}
-                placeholder="Açıklama"
+                onChange={(value) => onUpdateRow(row.id, { description: value })}
+                onSelect={(entry) => onPozSelect(row.id, entry)}
               />
             </TableCell>
 
@@ -211,6 +211,7 @@ export function PercentageCostTable({
                 className="h-8 text-right font-mono text-sm"
                 defaultValue={row.quantity.isZero() ? '' : formatTurkishNumber(row.quantity)}
                 key={`qty-${row.id}`}
+                onFocus={(e) => { e.target.value = row.quantity.toFixed().replace('.', ','); }}
                 onBlur={(e) => handleQuantityChange(row.id, e.target.value)}
                 onKeyDown={handleNumericKeyDown}
                 placeholder="0,00"
@@ -223,6 +224,7 @@ export function PercentageCostTable({
                 className="h-8 text-right font-mono text-sm"
                 defaultValue={row.unitPrice.isZero() ? '' : formatTurkishNumber(row.unitPrice)}
                 key={`price-${row.id}-${row.fromDatabase ? row.unitPrice.toString() : ''}`}
+                onFocus={(e) => { e.target.value = row.unitPrice.toFixed().replace('.', ','); }}
                 onBlur={(e) => handleUnitPriceChange(row.id, e.target.value)}
                 onKeyDown={handleNumericKeyDown}
                 placeholder="0,00"
@@ -245,7 +247,8 @@ export function PercentageCostTable({
                         row.percentageLow.isZero() ? '' : formatTurkishNumber(row.percentageLow)
                       }
                       key={`pctLow-${row.id}-range`}
-                      onBlur={(e) => handlePercentageLowChange(row.id, e.target.value)}
+                      onFocus={(e) => { e.target.value = row.percentageLow.toFixed().replace('.', ','); }}
+                onBlur={(e) => handlePercentageLowChange(row.id, e.target.value)}
                       onKeyDown={handleNumericKeyDown}
                       placeholder="Alt"
                     />
@@ -255,7 +258,8 @@ export function PercentageCostTable({
                         row.percentageHigh.isZero() ? '' : formatTurkishNumber(row.percentageHigh)
                       }
                       key={`pctHigh-${row.id}-range`}
-                      onBlur={(e) => handlePercentageHighChange(row.id, e.target.value)}
+                      onFocus={(e) => { e.target.value = row.percentageHigh.toFixed().replace('.', ','); }}
+                onBlur={(e) => handlePercentageHighChange(row.id, e.target.value)}
                       onKeyDown={handleNumericKeyDown}
                       placeholder="Üst"
                     />
@@ -267,7 +271,8 @@ export function PercentageCostTable({
                       row.percentageLow.isZero() ? '' : formatTurkishNumber(row.percentageLow)
                     }
                     key={`pctLow-${row.id}-single`}
-                    onBlur={(e) => handlePercentageLowChange(row.id, e.target.value)}
+                    onFocus={(e) => { e.target.value = row.percentageLow.toFixed().replace('.', ','); }}
+                onBlur={(e) => handlePercentageLowChange(row.id, e.target.value)}
                     onKeyDown={handleNumericKeyDown}
                     placeholder="0,00"
                   />

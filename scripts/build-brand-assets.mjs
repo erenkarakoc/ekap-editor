@@ -29,4 +29,8 @@ const ico = Buffer.concat([header, ...images]);
 await writeFile(resolve(brand, 'favicon.ico'), ico);
 await writeFile(resolve(root, 'app/favicon.ico'), ico);
 await sharp(source, { density: 768 }).resize(512, 512).png().toFile(resolve(brand, 'app-icon.png'));
+await sharp(source, { density: 384 })
+  .resize(180, 180)
+  .png()
+  .toFile(resolve(brand, 'apple-touch-icon.png'));
 console.log('İcmal brand assets generated from favicon_primary.svg.');

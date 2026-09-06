@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell, session } from 'electron';
 import fs from 'node:fs';
+import { registerProjectFiles, registerProjectCloseGuard } from './project-files';
 import path from 'node:path';
 import { startServer, stopServer, initLog, log } from './server';
 import { APP_NAME, APP_ID, userDataPath } from './identity';
@@ -65,6 +66,8 @@ function createWindow(): void {
     },
   });
 
+  registerProjectFiles(mainWindow, new URL(serverUrl).origin);
+  registerProjectCloseGuard(mainWindow);
   mainWindow.loadURL(serverUrl);
 
   // Show window when content is ready (avoids white flash)
@@ -192,7 +195,7 @@ app.whenReady().then(async () => {
   });
 });
 
-app.on('before-quit', () => {
+app.on('will-quit', () => {
   stopAllManagedProcesses();
   stopServer();
 });

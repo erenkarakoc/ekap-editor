@@ -1,7 +1,14 @@
-# EKAP Editör
+# İcmal
 
-Web, Electron ve ileride mobil istemciler için ortak Supabase Auth + RLS + RPC
-altyapısını kullanan ihale araçları uygulaması.
+Web ve Electron için ortak Supabase Auth + RLS + RPC altyapısını kullanan
+ihale araçları uygulaması. EKAP Editör özelliğinin asıl işi `.ekap` dosyalarını
+açmak, düzenlemek ve kaydetmektir. Poz veritabanı, analiz ve diğer araçlar
+gerektiğinde editöre yardımcı olur; dosya düzenlemek için maliyet projesi
+oluşturmak gerekmez.
+
+Yeni geliştirme oturumunda [kök yapılacaklar](../YAPILACAKLAR.md),
+[son durum](../DURUM.md) ve [LLM çalışma protokolü](../CALISMA_PROTOKOLU.md)
+okunur. Bu klasör ayrı Git deposudur.
 
 ## Yerel geliştirme
 
@@ -16,18 +23,14 @@ fonksiyonlarıyla korunur.
 
 ## Veritabanı
 
-Migrationlar `supabase/migrations/` altındadır. Hedef proje ref'i
-`tmvdvqjdytuwhbkcgldi` olarak `supabase/config.toml` içinde tanımlıdır.
+Tek migration yazma kaynağı [üst çalışma alanındaki dizindir](../supabase/migrations).
+Bu uygulamanın `supabase/migrations/` klasörü tarihsel kopyadır;
+[şema kaynağı açıklaması](supabase/README.md) geçerlidir. Şema işlemleri üst
+çalışma alanından ve seçilen görevin kapsamıyla yürütülür. Yerel dosya, test
+sonucu ve bağlı ortamın migration kaydı ayrı doğrulanır.
 
-```powershell
-npx supabase login
-npx supabase link --project-ref tmvdvqjdytuwhbkcgldi
-npx supabase db push
-```
-
-İlk admin hesabı migration içinde `erenkarakocw@gmail.com` olarak atanır.
-Migration sonrasında rolün yeni JWT'ye gelmesi için uygulamadan çıkış yapıp
-yeniden giriş yapın.
+Rol değişikliği sonrasında yeni JWT'nin alınması gerekir; uygulamadan çıkış
+yapıp yeniden giriş yapın. Hesap kimlikleri ve gizli değerler dokümana eklenmez.
 
 ## Admin iş akışı
 
@@ -68,7 +71,7 @@ Yayınlama için GitHub Actions variables:
 
 Yayınlama için GitHub Actions secrets:
 
-- `RELEASES_TOKEN` (`ekap-editor-releases` deposuna release yazabilen dar kapsamlı token)
+- `RELEASES_TOKEN` (`icmal-releases` deposuna release yazabilen dar kapsamlı token)
 
 Kişisel geliştirici için önerilen imzalama yöntemi SSL.com IV Code Signing +
 eSigner Cloud Signing'dir. Bu yöntemde ayrıca şu secrets gerekir:

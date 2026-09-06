@@ -31,7 +31,10 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'İcmal',
   description: 'İcmal — maliyet, metraj, analiz ve teklif çalışma alanı',
-  icons: { icon: '/assets/images/brand/favicon_primary.svg' },
+  icons: {
+    icon: { url: '/assets/images/brand/favicon_primary.svg', type: 'image/svg+xml' },
+    apple: '/assets/images/brand/apple-touch-icon.png',
+  },
 };
 
 export default async function RootLayout({

@@ -3,6 +3,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Expose a minimal API to the renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
+  projectOpen: () => ipcRenderer.invoke('project-open'),
+  projectSave: (input: {token?: string; name: string; bytes: Uint8Array; saveAs: boolean}) => ipcRenderer.invoke('project-save', input),
   windowMinimize: () => ipcRenderer.send('window-minimize'),
   windowMaximize: () => ipcRenderer.send('window-maximize'),
   windowClose: () => ipcRenderer.send('window-close'),

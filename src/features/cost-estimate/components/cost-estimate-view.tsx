@@ -3,6 +3,8 @@
 import React, { useState, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { Plus, Search, FileSpreadsheet } from 'lucide-react';
 
+import { useProjectSession } from '@features/projects/components/project-session';
+import { ProjectFileToolbar } from '@features/projects/components/project-file-toolbar';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { formatTurkishNumber } from '@shared/lib/turkish-number';
@@ -13,7 +15,8 @@ import type { CostRow, CostSortKey, PozEntry } from '../types';
 import type { ImportedRow } from '../lib/excel-import';
 
 export function CostEstimateView() {
-  const [rows, setRows] = useState<CostRow[]>([]);
+  const { costRows: rows, setCostRows: setRows, generation } = useProjectSession();
+  const [fileRevision, setFileRevision] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<{
     key: CostSortKey | null;
@@ -54,22 +57,24 @@ export function CostEstimateView() {
   }, []);
 
   const addRow = useCallback(() => {
-    setRows((prev) => {
-      const newRow = createEmptyRow(prev.length + 1);
-      setFocusedRowId(newRow.id);
-      return [...prev, newRow];
-    });
-  }, []);
+    const newRow = createEmptyRow(0);
+    setFocusedRowId(newRow.id);
+    setRows(prev => [...prev, {...newRow, rowNumber: prev.length + 1}]);
+  }, [setRows]);
 
   const deleteRow = useCallback((id: string) => {
     setRows((prev) => recalculateRowNumbers(prev.filter((r) => r.id !== id)));
-  }, []);
+  }, [setRows]);
 
   const updateRow = useCallback((id: string, updates: Partial<CostRow>) => {
     setRows((prev) =>
       prev.map((row) => {
         if (row.id !== id) return row;
         const updated = { ...row, ...updates };
+        if ('pozNo' in updates && !('source' in updates)) {
+          updated.source = undefined;
+          updated.fromDatabase = false;
+        }
         // Recalculate total when quantity or unitPrice changes
         if ('quantity' in updates || 'unitPrice' in updates) {
           updated.total = updated.quantity.times(updated.unitPrice);
@@ -77,7 +82,7 @@ export function CostEstimateView() {
         return updated;
       }),
     );
-  }, []);
+  }, [setRows]);
 
   const handlePozSelect = useCallback(
     (id: string, entry: PozEntry) => {
@@ -87,6 +92,7 @@ export function CostEstimateView() {
         unit: entry.unit,
         unitPrice: entry.unitPrice,
         fromDatabase: true,
+        source: entry.source,
       });
     },
     [updateRow],
@@ -122,7 +128,7 @@ export function CostEstimateView() {
       }));
       return [...prev, ...newRows];
     });
-  }, []);
+  }, [setRows]);
 
   const filteredAndSortedRows = useMemo(() => {
     let result = rows;
@@ -159,7 +165,11 @@ export function CostEstimateView() {
   const grandTotal = useMemo(() => calculateGrandTotal(rows), [rows]);
 
   return (
-    <div className="flex h-full flex-col">
+    <div data-project-editor className="flex h-full flex-col">
+      <ProjectFileToolbar kind="cost" rows={rows} onOpen={loaded => {
+        setRows(loaded); setFileRevision(n => n + 1); setSearchQuery(''); setFocusedRowId(null);
+        setSortConfig({key: null, direction: null});
+      }} />
       {/* Toolbar */}
       <div className="items-between bg-muted/20 flex flex-col justify-between space-y-2 border-b px-4 py-2 md:flex-row md:items-center md:space-y-0">
         <div className="flex items-center gap-4">
@@ -193,6 +203,7 @@ export function CostEstimateView() {
       {/* Table */}
       <div ref={tableContainerRef} className="flex-1 overflow-auto">
         <CostEstimateTable
+          key={`${generation}-${fileRevision}`}
           rows={filteredAndSortedRows}
           grandTotal={grandTotal}
           sortConfig={sortConfig}

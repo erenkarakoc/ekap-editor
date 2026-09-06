@@ -1,11 +1,13 @@
 import Decimal from 'decimal.js';
+import type { CatalogSource } from './lib/catalog';
 
 export interface PozEntry {
   pozNo: string;
   description: string;
   unit: string;
   unitPrice: Decimal;
-  institution: 'DSI' | 'CSB' | 'KTB';
+  institution: string;
+  source?: CatalogSource;
 }
 
 export interface CostRow {
@@ -18,6 +20,7 @@ export interface CostRow {
   unitPrice: Decimal;
   total: Decimal;
   fromDatabase: boolean;
+  source?: CatalogSource;
 }
 
 export type CostSortKey =

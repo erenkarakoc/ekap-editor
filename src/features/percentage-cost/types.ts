@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js';
+import type { CatalogSource } from '@features/cost-estimate/lib/catalog';
 
 export type { PozEntry } from '@features/cost-estimate/types';
 
@@ -27,4 +28,5 @@ export interface PercentageCostRow {
   estimatedCost: Decimal;
   useRange: boolean;
   fromDatabase: boolean;
+  source?: CatalogSource;
 }

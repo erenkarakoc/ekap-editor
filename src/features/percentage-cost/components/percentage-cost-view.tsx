@@ -4,6 +4,8 @@ import React, { useState, useCallback, useMemo, useRef, useLayoutEffect } from '
 import { Plus, Search, FileSpreadsheet } from 'lucide-react';
 import Decimal from 'decimal.js';
 
+import { useProjectSession } from '@features/projects/components/project-session';
+import { ProjectFileToolbar } from '@features/projects/components/project-file-toolbar';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import {
@@ -26,7 +28,8 @@ import type { PercentageCostRow, PercentageCostSortKey, PozEntry } from '../type
 import type { ImportedRow } from '@features/cost-estimate/lib/excel-import';
 
 export function PercentageCostView() {
-  const [rows, setRows] = useState<PercentageCostRow[]>([]);
+  const { percentageRows: rows, setPercentageRows: setRows, generation } = useProjectSession();
+  const [fileRevision, setFileRevision] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<{
     key: PercentageCostSortKey | null;
@@ -68,22 +71,24 @@ export function PercentageCostView() {
   }, []);
 
   const addRow = useCallback(() => {
-    setRows((prev) => {
-      const newRow = createEmptyRow(prev.length + 1);
-      setFocusedRowId(newRow.id);
-      return [...prev, newRow];
-    });
-  }, []);
+    const newRow = createEmptyRow(0);
+    setFocusedRowId(newRow.id);
+    setRows(prev => [...prev, {...newRow, rowNumber: prev.length + 1}]);
+  }, [setRows]);
 
   const deleteRow = useCallback((id: string) => {
     setRows((prev) => recalculateRowNumbers(prev.filter((r) => r.id !== id)));
-  }, []);
+  }, [setRows]);
 
   const updateRow = useCallback((id: string, updates: Partial<PercentageCostRow>) => {
     setRows((prev) =>
       prev.map((row) => {
         if (row.id !== id) return row;
         const updated = { ...row, ...updates };
+        if ('pozNo' in updates && !('source' in updates)) {
+          updated.source = undefined;
+          updated.fromDatabase = false;
+        }
         // Recalculate total when quantity or unitPrice changes
         if ('quantity' in updates || 'unitPrice' in updates) {
           updated.total = updated.quantity.times(updated.unitPrice);
@@ -104,7 +109,7 @@ export function PercentageCostView() {
         return updated;
       }),
     );
-  }, []);
+  }, [setRows]);
 
   const handlePozSelect = useCallback(
     (id: string, entry: PozEntry) => {
@@ -114,6 +119,7 @@ export function PercentageCostView() {
         unit: entry.unit,
         unitPrice: entry.unitPrice,
         fromDatabase: true,
+        source: entry.source,
       });
     },
     [updateRow],
@@ -133,7 +139,7 @@ export function PercentageCostView() {
         return { ...row, useRange: true };
       }),
     );
-  }, []);
+  }, [setRows]);
 
   const handleSort = useCallback((key: PercentageCostSortKey) => {
     setSortConfig((prev) => ({
@@ -172,7 +178,7 @@ export function PercentageCostView() {
       }));
       return [...prev, ...newRows];
     });
-  }, []);
+  }, [setRows]);
 
   const filteredAndSortedRows = useMemo(() => {
     let result = rows;
@@ -217,7 +223,11 @@ export function PercentageCostView() {
   const weightedAverage = useMemo(() => calculateWeightedAverage(rows), [rows]);
 
   return (
-    <div className="flex h-full flex-col">
+    <div data-project-editor className="flex h-full flex-col">
+      <ProjectFileToolbar kind="percentage" rows={rows} onOpen={loaded => {
+        setRows(loaded); setFileRevision(n => n + 1); setSearchQuery(''); setFocusedRowId(null);
+        setSortConfig({key: null, direction: null});
+      }} />
       {/* Toolbar */}
       <div className="items-between bg-muted/20 flex flex-col justify-between space-y-2 border-b px-4 py-2 md:flex-row md:items-center md:space-y-0">
         <div className="flex items-center gap-4">
@@ -251,6 +261,7 @@ export function PercentageCostView() {
       {/* Table */}
       <div ref={tableContainerRef} className="flex-1 overflow-auto">
         <PercentageCostTable
+          key={`${generation}-${fileRevision}`}
           rows={filteredAndSortedRows}
           sortConfig={sortConfig}
           columnWidths={columnWidths}
